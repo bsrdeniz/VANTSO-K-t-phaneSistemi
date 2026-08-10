@@ -1,6 +1,6 @@
 // C:\Users\BÜŞRA DENİZ\Desktop\VANTSO-KütüphaneSistemi\src\components\UserManagement.jsx
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, User, Mail, Phone } from 'lucide-react';
+import { Plus, Edit2, Trash2, User, Mail, Phone, Fingerprint } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function UserManagement() {
@@ -12,6 +12,7 @@ export default function UserManagement() {
   const [formData, setFormData] = useState({
     id: '',
     name: '',
+    tcNo: '',
     department: 'Genel',
     role: 'Personel', 
     email: '',
@@ -39,6 +40,7 @@ export default function UserManagement() {
     setFormData({
       id: '',
       name: '',
+      tcNo: '',
       department: 'Genel',
       role: 'Personel',
       email: '',
@@ -53,6 +55,7 @@ export default function UserManagement() {
     setEditMode(true);
     setFormData({ 
       ...user,
+      tcNo: user.tcNo || '',
       department: user.department || 'Genel',
       role: user.role || 'Personel',
       type: user.type || 'Personel'
@@ -82,8 +85,13 @@ export default function UserManagement() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.email || !formData.phone) {
+    if (!formData.name || !formData.email || !formData.phone || !formData.tcNo) {
       alert('Lütfen tüm zorunlu alanları doldurun!');
+      return;
+    }
+
+    if (formData.tcNo.length !== 11 || isNaN(formData.tcNo)) {
+      alert('Lütfen geçerli bir 11 haneli T.C. Kimlik Numarası girin!');
       return;
     }
 
@@ -116,7 +124,7 @@ export default function UserManagement() {
             <thead>
               <tr>
                 <th>Üye ID</th>
-                <th>Ad Soyad</th>
+                <th>Ad Soyad / T.C. No</th>
                 <th>E-posta</th>
                 <th>Telefon</th>
                 <th>Durum</th>
@@ -135,7 +143,10 @@ export default function UserManagement() {
                         {user.name.charAt(0)}
                       </div>
                       <div>
-                        <strong>{user.name}</strong>
+                        <div><strong>{user.name}</strong></div>
+                        <div className="text-muted text-xs" style={{ fontSize: '11px', marginTop: '2px', color: '#64748b' }}>
+                          TC: {user.tcNo || '-'}
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -187,6 +198,22 @@ export default function UserManagement() {
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
                 
+                <div className="form-group">
+                  <label className="form-label"><Fingerprint size={14} /> T.C. Kimlik No *</label>
+                  <input 
+                    type="text" 
+                    name="tcNo"
+                    className="form-control" 
+                    value={formData.tcNo}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 11);
+                      setFormData(prev => ({ ...prev, tcNo: val }));
+                    }}
+                    required
+                    placeholder="11 haneli T.C. Kimlik No"
+                  />
+                </div>
+
                 <div className="form-group">
                   <label className="form-label"><User size={14} /> Ad Soyad *</label>
                   <input 

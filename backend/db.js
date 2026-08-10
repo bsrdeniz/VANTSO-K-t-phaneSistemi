@@ -86,7 +86,8 @@ export const initDb = async () => {
         email TEXT UNIQUE NOT NULL,
         phone TEXT,
         status TEXT DEFAULT 'Aktif', -- Aktif, Pasif
-        type TEXT DEFAULT 'Personel' -- Personel, Dış Kullanıcı
+        type TEXT DEFAULT 'Personel', -- Personel, Dış Kullanıcı
+        tcNo TEXT
       )
     `);
 
@@ -131,6 +132,13 @@ export const initDb = async () => {
     }
 
     try {
+      await queryRun("ALTER TABLE users ADD COLUMN tcNo TEXT");
+      console.log("MIGRATION: 'tcNo' kolonu 'users' tablosuna başarıyla eklendi.");
+    } catch (e) {
+      // Column already exists
+    }
+
+    try {
       await queryRun("ALTER TABLE books DROP COLUMN category");
       console.log("MIGRATION: 'category' kolonu 'books' tablosundan kaldırıldı.");
     } catch (e) {
@@ -164,13 +172,13 @@ export const initDb = async () => {
 
       // Seed Users
       const initialUsers = [
-        ["U001", "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel"],
-        ["U002", "Ahmet Yılmaz", "Genel Sekreterlik", "Kütüphane Görevlisi", "a.yilmaz@vantso.org.tr", "0532 987 65 43", "Aktif", "Personel"],
-        ["U003", "Mehmet Kaya", "Ticaret Sicil", "Personel", "m.kaya@vantso.org.tr", "0544 555 66 77", "Aktif", "Personel"],
-        ["U004", "Ahmet Arslan", "Kurum Dışı", "Personel", "ahmet.arslan@gmail.com", "0505 111 22 33", "Aktif", "Dış Kullanıcı"]
+        ["U001", "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"],
+        ["U002", "Ahmet Yılmaz", "Genel Sekreterlik", "Kütüphane Görevlisi", "a.yilmaz@vantso.org.tr", "0532 987 65 43", "Aktif", "Personel", "22222222222"],
+        ["U003", "Mehmet Kaya", "Ticaret Sicil", "Personel", "m.kaya@vantso.org.tr", "0544 555 66 77", "Aktif", "Personel", "33333333333"],
+        ["U004", "Ahmet Arslan", "Kurum Dışı", "Personel", "ahmet.arslan@gmail.com", "0505 111 22 33", "Aktif", "Dış Kullanıcı", "44444444444"]
       ];
       for (const user of initialUsers) {
-        await queryRun('INSERT INTO users (id, name, department, role, email, phone, status, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', user);
+        await queryRun('INSERT INTO users (id, name, department, role, email, phone, status, type, tcNo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', user);
       }
 
       // Seed Books
@@ -225,8 +233,8 @@ export const initDb = async () => {
         await queryRun('UPDATE users SET email = "admin@vantso.org.tr", role = "Yönetici" WHERE id = "U001"');
       } else {
         await queryRun(
-          'INSERT INTO users (id, name, department, role, email, phone, status, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          ["U001", "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel"]
+          'INSERT INTO users (id, name, department, role, email, phone, status, type, tcNo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          ["U001", "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"]
         );
       }
     }

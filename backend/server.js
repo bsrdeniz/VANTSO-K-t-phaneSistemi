@@ -185,13 +185,13 @@ app.get('/api/users', async (req, res) => {
 // Add a user
 app.post('/api/users', async (req, res) => {
   try {
-    const { name, department, role, email, phone, status, type, actorId } = req.body;
+    const { name, department, role, email, phone, status, type, tcNo, actorId } = req.body;
     const countRow = await queryGet('SELECT count(*) as count FROM users');
     const userId = 'U' + String(countRow.count + 1).padStart(3, '0');
 
     await queryRun(
-      'INSERT INTO users (id, name, department, role, email, phone, status, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [userId, name, department || 'Genel', role || 'Personel', email, phone, status || 'Aktif', type || 'Personel']
+      'INSERT INTO users (id, name, department, role, email, phone, status, type, tcNo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [userId, name, department || 'Genel', role || 'Personel', email, phone, status || 'Aktif', type || 'Personel', tcNo || '']
     );
 
     await addLog(actorId, 'Kullanıcı Ekleme', `"${name}" adlı üye sisteme eklendi.`);
@@ -205,11 +205,11 @@ app.post('/api/users', async (req, res) => {
 app.put('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, department, role, email, phone, status, type, actorId } = req.body;
+    const { name, department, role, email, phone, status, type, tcNo, actorId } = req.body;
 
     const result = await queryRun(
-      'UPDATE users SET name = ?, department = ?, role = ?, email = ?, phone = ?, status = ?, type = ? WHERE id = ?',
-      [name, department || 'Genel', role || 'Personel', email, phone, status, type || 'Personel', id]
+      'UPDATE users SET name = ?, department = ?, role = ?, email = ?, phone = ?, status = ?, type = ?, tcNo = ? WHERE id = ?',
+      [name, department || 'Genel', role || 'Personel', email, phone, status, type || 'Personel', tcNo || '', id]
     );
 
     if (result.changes === 0) {
