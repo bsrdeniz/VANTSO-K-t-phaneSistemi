@@ -5,11 +5,9 @@ import { api } from '../services/api';
 
 export default function BookSearch() {
   const [books, setBooks] = useState([]);
-  const [categories, setCategories] = useState([]);
   
   // Search & Filter States
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedStatus, setSelectedStatus] = useState({
     Rafta: true,
     Ödünçte: true,
@@ -23,12 +21,8 @@ export default function BookSearch() {
   useEffect(() => {
     const loadSearchData = async () => {
       try {
-        const [booksData, settingsData] = await Promise.all([
-          api.getBooks(),
-          api.getSettings()
-        ]);
+        const booksData = await api.getBooks();
         setBooks(booksData);
-        setCategories(settingsData.categories || []);
       } catch (error) {
         console.error('Arama verileri yüklenirken hata:', error);
       }
@@ -53,13 +47,10 @@ export default function BookSearch() {
       book.isbn.includes(searchTerm) ||
       (book.keywords && book.keywords.some(k => k.toLowerCase().includes(searchTerm.toLowerCase())));
 
-    // 2. Category Match
-    const matchesCategory = selectedCategory === '' || book.category === selectedCategory;
-
-    // 3. Status Match
+    // 2. Status Match
     const matchesStatus = selectedStatus[book.status];
 
-    return matchesTerm && matchesCategory && matchesStatus;
+    return matchesTerm && matchesStatus;
   });
 
   // Get status badge class
@@ -93,20 +84,7 @@ export default function BookSearch() {
             </div>
           </div>
 
-          {/* Category Dropdown */}
-          <div className="form-group mb-0">
-            <label className="form-label">Kategori</label>
-            <select 
-              className="form-control"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              <option value="">Tüm Kategoriler</option>
-              {categories.map((cat, idx) => (
-                <option key={idx} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
+
 
           {/* View Mode & Count */}
           <div className="view-mode-selector">
@@ -164,7 +142,6 @@ export default function BookSearch() {
               }}>
                 <span className="cover-title">{book.name}</span>
                 <span className="cover-author">{book.author}</span>
-                <div className="cover-badge-category">{book.category}</div>
               </div>
 
               <div className="book-card-body">
@@ -206,7 +183,6 @@ export default function BookSearch() {
                   <th>Demirbaş No</th>
                   <th>Kitap Adı</th>
                   <th>Yazar</th>
-                  <th>Kategori</th>
                   <th>Barkod / ISBN</th>
                   <th>Fiziksel Konum</th>
                   <th>Durum</th>
@@ -222,7 +198,6 @@ export default function BookSearch() {
                       <span className="table-book-details">Baskı: {book.edition} | Dil: {book.language}</span>
                     </td>
                     <td>{book.author}</td>
-                    <td>{book.category}</td>
                     <td>
                       <div>B: {book.barcode}</div>
                       <div className="text-muted text-xs">I: {book.isbn}</div>
@@ -277,7 +252,7 @@ export default function BookSearch() {
                   <p className="author-name-sub">Yazar: <strong>{selectedBook.author}</strong></p>
                   
                   <div className="book-specs-grid">
-                    <div><strong>Kategori:</strong> {selectedBook.category}</div>
+
                     <div><strong>Demirbaş No:</strong> {selectedBook.fixtureNo}</div>
                     <div><strong>Barkod No:</strong> {selectedBook.barcode}</div>
                     <div><strong>ISBN:</strong> {selectedBook.isbn}</div>

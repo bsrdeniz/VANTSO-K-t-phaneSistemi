@@ -23,7 +23,7 @@ export default function Sidebar({ activeTab, setActiveTab, activeUser, onCloseSi
     { id: 'books', label: 'Kitap Yönetimi', icon: BookOpen, roles: ['Yönetici', 'Kütüphane Görevlisi'] },
     { id: 'lend', label: 'Ödünç Verme', icon: ArrowUpRight, roles: ['Yönetici', 'Kütüphane Görevlisi'] },
     { id: 'return', label: 'İade İşlemleri', icon: ArrowDownLeft, roles: ['Yönetici', 'Kütüphane Görevlisi'] },
-    { id: 'users', label: 'Personel Yönetimi', icon: Users, roles: ['Yönetici'] },
+    { id: 'users', label: 'Üye Yönetimi', icon: Users, roles: ['Yönetici'] },
     { id: 'history', label: 'Hareket Geçmişi', icon: History, roles: ['Yönetici', 'Kütüphane Görevlisi'] },
     { id: 'reports', label: 'Raporlama', icon: FileBarChart2, roles: ['Yönetici'] },
     { id: 'settings', label: 'Sistem Ayarları', icon: Settings, roles: ['Yönetici'] },

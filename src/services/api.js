@@ -68,12 +68,9 @@ export const api = {
     method: 'POST',
     body: JSON.stringify({ ...settings, actorId })
   }),
-  addCategory: (name, actorId) => fetchJson(`${API_BASE}/settings/categories`, {
+  changePassword: (currentPassword, newPassword, actorId) => fetchJson(`${API_BASE}/settings/change-password`, {
     method: 'POST',
-    body: JSON.stringify({ name, actorId })
-  }),
-  deleteCategory: (name, actorId) => fetchJson(`${API_BASE}/settings/categories/${encodeURIComponent(name)}?actorId=${actorId}`, {
-    method: 'DELETE'
+    body: JSON.stringify({ currentPassword, newPassword, actorId })
   }),
   addLocation: (type, value, actorId) => fetchJson(`${API_BASE}/settings/locations`, {
     method: 'POST',

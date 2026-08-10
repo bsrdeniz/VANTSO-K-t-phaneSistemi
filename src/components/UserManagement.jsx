@@ -1,6 +1,6 @@
 // C:\Users\BÜŞRA DENİZ\Desktop\VANTSO-KütüphaneSistemi\src\components\UserManagement.jsx
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, User, Mail, Phone, Shield } from 'lucide-react';
+import { Plus, Edit2, Trash2, User, Mail, Phone, Shield, UserCheck } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function UserManagement() {
@@ -16,7 +16,8 @@ export default function UserManagement() {
     role: 'Personel', // Yönetici, Kütüphane Görevlisi, Personel
     email: '',
     phone: '',
-    status: 'Aktif' // Aktif, Pasif
+    status: 'Aktif', // Aktif, Pasif
+    type: 'Personel' // Personel, Dış Kullanıcı
   });
 
   useEffect(() => {
@@ -42,19 +43,23 @@ export default function UserManagement() {
       role: 'Personel',
       email: '',
       phone: '',
-      status: 'Aktif'
+      status: 'Aktif',
+      type: 'Personel'
     });
     setIsModalOpen(true);
   };
 
   const handleOpenEditModal = (user) => {
     setEditMode(true);
-    setFormData({ ...user });
+    setFormData({ 
+      ...user,
+      type: user.type || 'Personel'
+    });
     setIsModalOpen(true);
   };
 
   const handleDelete = async (id) => {
-    if (confirm('Bu personeli sistemden silmek istediğinize emin misiniz?')) {
+    if (confirm('Bu üyeyi sistemden silmek istediğinize emin misiniz?')) {
       try {
         await api.deleteUser(id, activeUser?.id);
         loadUsers();
@@ -96,9 +101,9 @@ export default function UserManagement() {
   return (
     <div className="user-management-view">
       <div className="view-actions-bar mb-4">
-        <h2>VANTSO Kurumsal Personel Listesi</h2>
+        <h2>Kütüphane Üye & Personel Listesi</h2>
         <button className="btn btn-primary" onClick={handleOpenAddModal}>
-          <Plus size={16} /> Yeni Personel Ekle
+          <Plus size={16} /> Yeni Üye Ekle
         </button>
       </div>
 
@@ -108,11 +113,12 @@ export default function UserManagement() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Personel ID</th>
+                <th>Üye ID</th>
                 <th>Ad Soyad</th>
+                <th>Üye Tipi</th>
                 <th>Birim (Departman)</th>
                 <th>Görev (Rol Yetkisi)</th>
-                <th>Kurumsal E-posta</th>
+                <th>E-posta</th>
                 <th>Telefon</th>
                 <th>Durum</th>
                 <th className="text-center">İşlemler</th>
@@ -124,13 +130,20 @@ export default function UserManagement() {
                   <td><strong>{user.id}</strong></td>
                   <td>
                     <div className="table-user-row">
-                      <div className="mini-avatar">
+                      <div className="mini-avatar" style={{
+                        backgroundColor: user.type === 'Dış Kullanıcı' ? '#d97706' : 'var(--primary-color)'
+                      }}>
                         {user.name.charAt(0)}
                       </div>
                       <div>
                         <strong>{user.name}</strong>
                       </div>
                     </div>
+                  </td>
+                  <td>
+                    <span className={`badge ${user.type === 'Dış Kullanıcı' ? 'badge-hasarli' : 'badge-rafta'}`}>
+                      {user.type === 'Dış Kullanıcı' ? 'Dış Üye' : 'VANTSO Personeli'}
+                    </span>
                   </td>
                   <td>{user.department}</td>
                   <td>
@@ -157,14 +170,14 @@ export default function UserManagement() {
                       <button 
                         onClick={() => handleOpenEditModal(user)}
                         className="btn btn-outline btn-sm edit-action-btn"
-                        title="Personel Düzenle"
+                        title="Üye Düzenle"
                       >
                         <Edit2 size={12} /> Düzenle
                       </button>
                       <button 
                         onClick={() => handleDelete(user.id)}
                         className="btn btn-danger btn-sm"
-                        title="Personel Sil"
+                        title="Üye Sil"
                       >
                         <Trash2 size={12} /> Sil
                       </button>
@@ -182,12 +195,34 @@ export default function UserManagement() {
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h2>{editMode ? 'Personel Bilgilerini Düzenle' : 'Yeni Personel Kaydet'}</h2>
+              <h2>{editMode ? 'Üye Bilgilerini Düzenle' : 'Yeni Üye Kaydet'}</h2>
               <button className="close-btn" onClick={() => setIsModalOpen(false)}>&times;</button>
             </div>
             
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
+                
+                <div className="form-group">
+                  <label className="form-label"><UserCheck size={14} /> Üye Tipi</label>
+                  <select 
+                    name="type"
+                    className="form-control" 
+                    value={formData.type || 'Personel'}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData(prev => ({
+                        ...prev,
+                        type: val,
+                        department: val === 'Dış Kullanıcı' ? 'Kurum Dışı' : prev.department === 'Kurum Dışı' ? '' : prev.department,
+                        role: val === 'Dış Kullanıcı' ? 'Personel' : prev.role
+                      }));
+                    }}
+                  >
+                    <option value="Personel">VANTSO Kurumsal Personeli</option>
+                    <option value="Dış Kullanıcı">Dışarıdan Üye / Ziyaretçi</option>
+                  </select>
+                </div>
+
                 <div className="form-group">
                   <label className="form-label"><User size={14} /> Ad Soyad *</label>
                   <input 
@@ -197,7 +232,7 @@ export default function UserManagement() {
                     value={formData.name}
                     onChange={handleInputChange}
                     required
-                    placeholder="Örn: Büşra Deniz"
+                    placeholder="Örn: Ahmet Yılmaz"
                   />
                 </div>
 
@@ -211,7 +246,8 @@ export default function UserManagement() {
                       value={formData.department}
                       onChange={handleInputChange}
                       required
-                      placeholder="Örn: Basın ve Halkla İlişkiler"
+                      disabled={formData.type === 'Dış Kullanıcı'}
+                      placeholder={formData.type === 'Dış Kullanıcı' ? 'Kurum Dışı' : "Örn: Basın ve Halkla İlişkiler"}
                     />
                   </div>
                   <div className="form-group">
@@ -221,17 +257,18 @@ export default function UserManagement() {
                       className="form-control" 
                       value={formData.role}
                       onChange={handleInputChange}
+                      disabled={formData.type === 'Dış Kullanıcı'}
                     >
                       <option value="Yönetici">Yönetici (Tüm modüllere erişebilir)</option>
                       <option value="Kütüphane Görevlisi">Kütüphane Görevlisi (Kitap/Ödünç yönetir)</option>
-                      <option value="Personel">Standart Personel (Yalnızca kitap arar ve geçmişini görür)</option>
+                      <option value="Personel">Standart Personel (Yalnızca kitap arar)</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label"><Mail size={14} /> Kurumsal E-posta *</label>
+                    <label className="form-label"><Mail size={14} /> E-posta Adresi *</label>
                     <input 
                       type="email" 
                       name="email"
@@ -239,7 +276,7 @@ export default function UserManagement() {
                       value={formData.email}
                       onChange={handleInputChange}
                       required
-                      placeholder="b.deniz@vantso.org.tr"
+                      placeholder="Örn: uye@gmail.com"
                     />
                   </div>
                   <div className="form-group">
@@ -257,7 +294,7 @@ export default function UserManagement() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Personel Durumu</label>
+                  <label className="form-label">Üye Durumu</label>
                   <select 
                     name="status"
                     className="form-control" 

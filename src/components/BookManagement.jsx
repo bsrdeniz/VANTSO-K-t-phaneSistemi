@@ -5,7 +5,6 @@ import { api } from '../services/api';
 
 export default function BookManagement() {
   const [books, setBooks] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [locations, setLocations] = useState({ buildings: [], floors: [], cabinets: [], shelves: [] });
   const [settings, setSettings] = useState({});
   const [activeUser, setActiveUser] = useState(null);
@@ -25,7 +24,6 @@ export default function BookManagement() {
     edition: 1,
     pageCount: '',
     language: 'Türkçe',
-    category: '',
     keywords: '',
     summary: '',
     coverImage: '',
@@ -52,13 +50,11 @@ export default function BookManagement() {
       
       setBooks(booksData);
       setSettings(settingsData);
-      setCategories(settingsData.categories || []);
       setLocations(settingsData.locations || { buildings: [], floors: [], cabinets: [], shelves: [] });
       
-      // Set default category and locations in form
+      // Set default locations in form
       setFormData(prev => ({
         ...prev,
-        category: settingsData.categories ? settingsData.categories[0] : '',
         location: {
           building: settingsData.locations?.buildings?.[0] || '',
           floor: settingsData.locations?.floors?.[0] || '',
@@ -89,7 +85,6 @@ export default function BookManagement() {
       edition: 1,
       pageCount: '',
       language: 'Türkçe',
-      category: categories[0] || '',
       keywords: '',
       summary: '',
       coverImage: '',
@@ -202,7 +197,6 @@ export default function BookManagement() {
                 <th>Demirbaş No</th>
                 <th>Kapak / Kitap Adı</th>
                 <th>Yazar</th>
-                <th>Kategori</th>
                 <th>Barkod / ISBN</th>
                 <th>Fiziksel Raf Konumu</th>
                 <th>Adet</th>
@@ -213,7 +207,7 @@ export default function BookManagement() {
             <tbody>
               {books.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="text-center p-4">Kayıtlı kitap bulunmamaktadır.</td>
+                  <td colSpan="8" className="text-center p-4">Kayıtlı kitap bulunmamaktadır.</td>
                 </tr>
               ) : (
                 books.map((book) => (
@@ -233,7 +227,7 @@ export default function BookManagement() {
                       </div>
                     </td>
                     <td>{book.author}</td>
-                    <td>{book.category}</td>
+
                     <td>
                       <div>B: {book.barcode}</div>
                       <div className="text-muted text-xs">I: {book.isbn || '-'}</div>
@@ -368,19 +362,6 @@ export default function BookManagement() {
                           onChange={handleInputChange} 
                           required
                         />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">Kategori</label>
-                        <select 
-                          name="category" 
-                          className="form-control" 
-                          value={formData.category} 
-                          onChange={handleInputChange}
-                        >
-                          {categories.map((cat, i) => (
-                            <option key={i} value={cat}>{cat}</option>
-                          ))}
-                        </select>
                       </div>
                     </div>
 

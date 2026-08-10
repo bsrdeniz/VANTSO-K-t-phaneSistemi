@@ -8,8 +8,7 @@ import {
   Plus, 
   Calendar,
   History,
-  TrendingUp,
-  FolderDot
+  TrendingUp
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -25,7 +24,6 @@ export default function Dashboard({ setActiveTab }) {
   const [recentLogs, setRecentLogs] = useState([]);
   const [recentLends, setRecentLends] = useState([]);
   const [topBooks, setTopBooks] = useState([]);
-  const [categoryData, setCategoryData] = useState([]);
   const [monthlyLends, setMonthlyLends] = useState([]);
 
   useEffect(() => {
@@ -79,7 +77,6 @@ export default function Dashboard({ setActiveTab }) {
           id: bookId,
           name: book ? book.name : 'Bilinmeyen Kitap',
           author: book ? book.author : '',
-          category: book ? book.category : '',
           count: borrowCounts[bookId]
         };
       })
@@ -87,17 +84,7 @@ export default function Dashboard({ setActiveTab }) {
       .slice(0, 3);
     setTopBooks(sortedTop);
 
-    // 5. Category Distribution
-    const catCounts = {};
-    books.forEach(b => {
-      catCounts[b.category] = (catCounts[b.category] || 0) + (b.totalCopies || 1);
-    });
-    const catArray = Object.keys(catCounts).map(catName => ({
-      name: catName,
-      count: catCounts[catName],
-      percent: Math.round((catCounts[catName] / totalBooks) * 100)
-    })).sort((a, b) => b.count - a.count);
-    setCategoryData(catArray);
+
 
         // 6. Monthly Lending Graph Data (Simulated last 6 months)
         const monthNames = ["Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz"];
@@ -203,26 +190,7 @@ export default function Dashboard({ setActiveTab }) {
             </div>
           </div>
 
-          {/* Category Distribution Progress List */}
-          <div className="card dashboard-card">
-            <div className="card-title">
-              <span>Kategori Dağılımı</span>
-              <FolderDot size={16} className="text-muted" />
-            </div>
-            <div className="category-list">
-              {categoryData.map((cat, idx) => (
-                <div key={idx} className="category-progress-item">
-                  <div className="category-progress-labels">
-                    <span className="cat-name">{cat.name}</span>
-                    <span className="cat-count">{cat.count} Kitap ({cat.percent}%)</span>
-                  </div>
-                  <div className="progress-bar-bg">
-                    <div className="progress-bar-fill" style={{ width: `${cat.percent}%`, backgroundColor: `hsl(210, 60%, ${30 + idx * 8}%)` }}></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+
         </div>
 
         {/* Right Side: Operations Lists */}
@@ -268,7 +236,7 @@ export default function Dashboard({ setActiveTab }) {
                     <div className="top-book-rank">#{idx + 1}</div>
                     <div className="top-book-info">
                       <h4>{book.name}</h4>
-                      <p>{book.author} | {book.category}</p>
+                      <p>{book.author}</p>
                     </div>
                     <div className="top-book-count">
                       <strong>{book.count}</strong> defa

@@ -65,10 +65,12 @@ VANTSO-KütüphaneSistemi/
 
 ## Geliştirilen Modüller ve Detaylar
 
-1. **Dashboard (Gösterge Paneli):** Toplam kitap, kullanılabilir kitap, ödünçte ve gecikmiş kitap sayılarını içeren KPI kartları bulunur. Kategori dağılımı (dinamik progress çubukları) ve Aylık Ödünç Grafiği (saf SVG sütun grafiği) yer alır.
-2. **Gelişmiş Arama:** Kitap adı, yazar, barkod, ISBN veya etiketlere göre anlık arama yapar. Kart görünümü (AI kapak mockup'lı) ile detaylı veri tablosu görünümü arasında tek tıkla geçiş sağlar.
+1. **Dashboard (Gösterge Paneli):** Toplam kitap, kullanılabilir kitap, ödünçte ve gecikmiş kitap sayılarını içeren KPI kartları bulunur. Aylık Ödünç Grafiği (saf SVG sütun grafiği) ve son sistem hareketleri yer alır.
+2. **Gelişmiş Arama:** Kitap adı, yazar, barkod, ISBN veya anahtar kelimelere göre anlık arama yapar. Kart görünümü (AI kapak mockup'lı) ile detaylı veri tablosu görünümü arasında tek tıkla geçiş sağlar.
 3. **Detay Kartı & Raf Konumu:** Kitap detay penceresinde kitabın fiziksel konumu (Bina, Kat, Dolap, Raf ve Sıra No) görsel kutucuklar ile gösterilir; personel aradığı kitabı saniyeler içinde bulabilir.
-4. **Ödünç & İade Döngüsü:** Ödünç verme ekranında kitap ve personel otomatik tamamlama (auto-suggest) ile hızlıca seçilir ve son teslim tarihi belirlenerek durum "Ödünçte" olarak güncellenir. İade alma ekranında teslim tarihi geçmiş kitaplar için kırmızı uyarılar gösterilir. Kitap iade edilirken "Sağlam", "Hasarlı" veya "Kayıp" seçilerek envantere işlenir.
-5. **Silinemez Log Sistemi:** Yapılan tüm işlemler (kitap kaydı, personel güncellemesi, ödünç/iade hareketleri vb.) işlemi yapan personelin ID'si ve zaman damgasıyla birlikte sistem loglarına eklenir. Güvenlik gereği bu loglar silinemez.
-6. **Güvenli Giriş Ekranı (Login):** Sistem, kurumsal e-posta (`admin@vantso.org.tr`) ve şifre (`vantso123`) doğrulaması ile çalışır. Başarılı giriş sonrasında yetkilendirilmiş kurumsal modüller açılır. Sol alt köşedeki "Çıkış Yap" butonu ile oturum sonlandırılabilir.
-7. **Raporlama:** Envanter dağılımı, en çok okunan kitaplar ve birim bazlı okuma istatistikleri sunulur. "Yazdır" butonu kurumsal çıktı formatı sağlar (print-CSS optimizasyonu yapılmıştır).
+4. **Ödünç & İade Döngüsü:** Ödünç verme ekranında kitap ve üye otomatik tamamlama (auto-suggest) ile hızlıca seçilir ve son teslim tarihi belirlenerek durum "Ödünçte" olarak güncellenir. İade alma ekranında teslim tarihi geçmiş kitaplar için kırmızı uyarılar gösterilir. Kitap iade edilirken "Sağlam", "Hasarlı" veya "Kayıp" seçilerek envantere işlenir.
+5. **Silinemez Log Sistemi:** Yapılan tüm işlemler (kitap kaydı, üye güncellemesi, ödünç/iade hareketleri vb.) işlemi yapan personelin ID'si ve zaman damgasıyla birlikte sistem loglarına eklenir. Güvenlik gereği bu loglar silinemez.
+6. **Güvenli Giriş Ekranı (Login):** Sistem, veritabanına kayıtlı yönetici e-postası (`admin@vantso.org.tr`) ve güncellenebilir şifre doğrulaması ile çalışır. Başarılı giriş sonrasında yetkilendirilmiş modüller açılır.
+7. **Üye Yönetimi:** Hem VANTSO personellerini hem de dışarıdan üye olan sivil vatandaşları kapsayan ortak rehberdir. Dış kullanıcılar eklendiğinde sistem rolü kısıtlanır ve departmanı otomatik olarak "Kurum Dışı" olarak ayarlanır.
+8. **Şifre Değiştirme (Ayarlar):** Yönetici giriş şifresi, mevcut şifre doğrulanarak bu ekran üzerinden dinamik olarak güncellenir ve yeni şifre veritabanına kaydedilir.
+

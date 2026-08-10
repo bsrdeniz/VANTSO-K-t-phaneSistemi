@@ -50,7 +50,6 @@ const formatBook = (b) => ({
   edition: b.edition,
   pageCount: b.pageCount,
   language: b.language,
-  category: b.category,
   keywords: b.keywords ? b.keywords.split(',').map(s => s.trim()) : [],
   summary: b.summary,
   coverImage: b.coverImage,
@@ -85,7 +84,7 @@ app.post('/api/books', async (req, res) => {
   try {
     const { 
       name, barcode, isbn, fixtureNo, author, publisher, publishYear, 
-      edition, pageCount, language, category, keywords, summary, 
+      edition, pageCount, language, keywords, summary, 
       coverImage, totalCopies, status, location, userId
     } = req.targetBook = req.body;
 
@@ -97,12 +96,12 @@ app.post('/api/books', async (req, res) => {
     await queryRun(`
       INSERT INTO books (
         id, name, barcode, isbn, fixtureNo, author, publisher, publishYear, edition, 
-        pageCount, language, category, keywords, summary, coverImage, totalCopies, 
+        pageCount, language, keywords, summary, coverImage, totalCopies, 
         status, loc_building, loc_floor, loc_cabinet, loc_shelf, loc_rowNo
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       bookId, name, barcode, isbn, fixtureNo, author, publisher, publishYear, edition,
-      pageCount, language, category, keywordsStr, summary, coverImage, totalCopies, status,
+      pageCount, language, keywordsStr, summary, coverImage, totalCopies, status,
       location?.building || '', location?.floor || '', location?.cabinet || '', location?.shelf || '', location?.rowNo || 1
     ]);
 
@@ -119,7 +118,7 @@ app.put('/api/books/:id', async (req, res) => {
     const { id } = req.params;
     const { 
       name, barcode, isbn, fixtureNo, author, publisher, publishYear, 
-      edition, pageCount, language, category, keywords, summary, 
+      edition, pageCount, language, keywords, summary, 
       coverImage, totalCopies, status, location, userId
     } = req.body;
 
@@ -128,13 +127,13 @@ app.put('/api/books/:id', async (req, res) => {
     const result = await queryRun(`
       UPDATE books SET 
         name = ?, barcode = ?, isbn = ?, fixtureNo = ?, author = ?, publisher = ?, 
-        publishYear = ?, edition = ?, pageCount = ?, language = ?, category = ?, 
+        publishYear = ?, edition = ?, pageCount = ?, language = ?, 
         keywords = ?, summary = ?, coverImage = ?, totalCopies = ?, status = ?, 
         loc_building = ?, loc_floor = ?, loc_cabinet = ?, loc_shelf = ?, loc_rowNo = ?
       WHERE id = ?
     `, [
       name, barcode, isbn, fixtureNo, author, publisher, publishYear, edition,
-      pageCount, language, category, keywordsStr, summary, coverImage, totalCopies, status,
+      pageCount, language, keywordsStr, summary, coverImage, totalCopies, status,
       location?.building || '', location?.floor || '', location?.cabinet || '', location?.shelf || '', location?.rowNo || 1,
       id
     ]);
@@ -186,16 +185,16 @@ app.get('/api/users', async (req, res) => {
 // Add a user
 app.post('/api/users', async (req, res) => {
   try {
-    const { name, department, role, email, phone, status, actorId } = req.body;
+    const { name, department, role, email, phone, status, type, actorId } = req.body;
     const countRow = await queryGet('SELECT count(*) as count FROM users');
     const userId = 'U' + String(countRow.count + 1).padStart(3, '0');
 
     await queryRun(
-      'INSERT INTO users (id, name, department, role, email, phone, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [userId, name, department, role, email, phone, status || 'Aktif']
+      'INSERT INTO users (id, name, department, role, email, phone, status, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [userId, name, department, role, email, phone, status || 'Aktif', type || 'Personel']
     );
 
-    await addLog(actorId, 'Kullanıcı Ekleme', `"${name}" adlı personel sisteme eklendi.`);
+    await addLog(actorId, 'Kullanıcı Ekleme', `"${name}" adlı üye sisteme eklendi.`);
     res.status(201).json({ id: userId, ...req.body });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -206,18 +205,18 @@ app.post('/api/users', async (req, res) => {
 app.put('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, department, role, email, phone, status, actorId } = req.body;
+    const { name, department, role, email, phone, status, type, actorId } = req.body;
 
     const result = await queryRun(
-      'UPDATE users SET name = ?, department = ?, role = ?, email = ?, phone = ?, status = ? WHERE id = ?',
-      [name, department, role, email, phone, status, id]
+      'UPDATE users SET name = ?, department = ?, role = ?, email = ?, phone = ?, status = ?, type = ? WHERE id = ?',
+      [name, department, role, email, phone, status, type || 'Personel', id]
     );
 
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Kullanıcı bulunamadı.' });
     }
 
-    await addLog(actorId, 'Kullanıcı Güncelleme', `"${name}" personel bilgileri güncellendi.`);
+    await addLog(actorId, 'Kullanıcı Güncelleme', `"${name}" üye bilgileri güncellendi.`);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -447,7 +446,11 @@ app.delete('/api/settings/locations', async (req, res) => {
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (password !== 'vantso123') {
+
+    const passRow = await queryGet('SELECT value FROM settings WHERE key = "admin_password"');
+    const adminPassword = passRow ? passRow.value : 'vantso123';
+
+    if (password !== adminPassword) {
       return res.status(401).json({ error: 'Hatalı şifre!' });
     }
     
@@ -466,6 +469,27 @@ app.post('/api/login', async (req, res) => {
       phone: user.phone,
       status: user.status
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Change admin login password in settings
+app.post('/api/settings/change-password', async (req, res) => {
+  try {
+    const { currentPassword, newPassword, actorId } = req.body;
+    
+    const passRow = await queryGet('SELECT value FROM settings WHERE key = "admin_password"');
+    const adminPassword = passRow ? passRow.value : 'vantso123';
+    
+    if (currentPassword !== adminPassword) {
+      return res.status(400).json({ error: 'Mevcut şifre hatalı!' });
+    }
+    
+    await queryRun('UPDATE settings SET value = ? WHERE key = "admin_password"', [newPassword]);
+    await addLog(actorId, 'Şifre Değiştirme', 'Yönetici giriş şifresi başarıyla güncellendi.');
+    
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

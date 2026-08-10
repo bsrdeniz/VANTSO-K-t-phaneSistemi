@@ -43,13 +43,6 @@ export const initDb = async () => {
   try {
     // 1. Create Tables
     await queryRun(`
-      CREATE TABLE IF NOT EXISTS categories (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL
-      )
-    `);
-
-    await queryRun(`
       CREATE TABLE IF NOT EXISTS locations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         type TEXT NOT NULL, -- building, floor, cabinet, shelf
@@ -71,7 +64,6 @@ export const initDb = async () => {
         edition INTEGER,
         pageCount INTEGER,
         language TEXT,
-        category TEXT,
         keywords TEXT, -- stored as comma-separated values
         summary TEXT,
         coverImage TEXT,
@@ -93,7 +85,8 @@ export const initDb = async () => {
         role TEXT NOT NULL, -- Yönetici, Kütüphane Görevlisi, Personel
         email TEXT UNIQUE NOT NULL,
         phone TEXT,
-        status TEXT DEFAULT 'Aktif' -- Aktif, Pasif
+        status TEXT DEFAULT 'Aktif', -- Aktif, Pasif
+        type TEXT DEFAULT 'Personel' -- Personel, Dış Kullanıcı
       )
     `);
 
@@ -129,20 +122,26 @@ export const initDb = async () => {
       )
     `);
 
+    // Run Migrations for existing databases
+    try {
+      await queryRun("ALTER TABLE users ADD COLUMN type TEXT DEFAULT 'Personel'");
+      console.log("MIGRATION: 'type' kolonu 'users' tablosuna başarıyla eklendi.");
+    } catch (e) {
+      // Column already exists
+    }
+
+    try {
+      await queryRun("ALTER TABLE books DROP COLUMN category");
+      console.log("MIGRATION: 'category' kolonu 'books' tablosundan kaldırıldı.");
+    } catch (e) {
+      // Column already dropped or SQLite version lacks DROP COLUMN support
+    }
+
     // 2. Insert Seed Data if database is newly initialized
-    const catCheck = await queryGet('SELECT count(*) as count FROM categories');
-    if (catCheck.count === 0) {
+    const settingsCheck = await queryGet('SELECT count(*) as count FROM settings');
+    if (settingsCheck.count === 0) {
       console.log('Veritabanı boş, örnek veriler yükleniyor...');
       
-      // Seed Categories
-      const initialCategories = [
-        "Van Kitaplığı", "Tarih ve Kültür", "Ekonomi ve Finans", 
-        "Hukuk ve Mevzuat", "Yönetim ve Girişimcilik", "Rapor ve İnceleme", "Sosyal Bilimler"
-      ];
-      for (const cat of initialCategories) {
-        await queryRun('INSERT INTO categories (name) VALUES (?)', [cat]);
-      }
-
       // Seed Locations
       const initialLocations = {
         buildings: ["Ana Hizmet Binası", "Ek Hizmet Binası"],
@@ -161,33 +160,34 @@ export const initDb = async () => {
       await queryRun("INSERT INTO settings (key, value) VALUES ('barcodePrefix', '8680001')");
       await queryRun("INSERT INTO settings (key, value) VALUES ('lendingLimitDays', '15')");
       await queryRun("INSERT INTO settings (key, value) VALUES ('warningBeforeDays', '3')");
+      await queryRun("INSERT INTO settings (key, value) VALUES ('admin_password', 'vantso123')");
 
       // Seed Users
       const initialUsers = [
-        ["U001", "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif"],
-        ["U002", "Ahmet Yılmaz", "Genel Sekreterlik", "Kütüphane Görevlisi", "a.yilmaz@vantso.org.tr", "0532 987 65 43", "Aktif"],
-        ["U003", "Mehmet Kaya", "Ticaret Sicil", "Personel", "m.kaya@vantso.org.tr", "0544 555 66 77", "Aktif"],
-        ["U004", "Ayşe Demir", "Basın ve Halkla İlişkiler", "Personel", "a.demir@vantso.org.tr", "0505 111 22 33", "Aktif"]
+        ["U001", "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel"],
+        ["U002", "Ahmet Yılmaz", "Genel Sekreterlik", "Kütüphane Görevlisi", "a.yilmaz@vantso.org.tr", "0532 987 65 43", "Aktif", "Personel"],
+        ["U003", "Mehmet Kaya", "Ticaret Sicil", "Personel", "m.kaya@vantso.org.tr", "0544 555 66 77", "Aktif", "Personel"],
+        ["U004", "Ahmet Arslan", "Kurum Dışı", "Personel", "ahmet.arslan@gmail.com", "0505 111 22 33", "Aktif", "Dış Kullanıcı"]
       ];
       for (const user of initialUsers) {
-        await queryRun('INSERT INTO users (id, name, department, role, email, phone, status) VALUES (?, ?, ?, ?, ?, ?, ?)', user);
+        await queryRun('INSERT INTO users (id, name, department, role, email, phone, status, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', user);
       }
 
       // Seed Books
       const initialBooks = [
-        ["B001", "Van Ticaret ve Sanayi Odası Tarihçesi", "868000100101", "978-605-123-456-7", "DEM-2024-001", "Dr. Selim Uçar", "VANTSO Yayınları", 2018, 1, 180, "Türkçe", "Van Kitaplığı", "VANTSO, Van, Ticaret, Tarihçe", "Van Ticaret ve Sanayi Odası'nın kuruluşundan günümüze kadar geçen süredeki kurumsal geçmişini ve ekonomik katkılarını inceleyen başvuru kaynağı.", "", 2, "Rafta", "Ana Hizmet Binası", "Zemin Kat", "Dolap A", "Raf 1", 1],
-        ["B002", "Bölgesel Kalkınma Raporu: Doğu Anadolu", "868000100102", "978-605-123-789-0", "DEM-2024-002", "VANTSO Araştırma Kurulu", "VANTSO Yayınları", 2021, 1, 250, "Türkçe", "Rapor ve İnceleme", "Kalkınma, Ekonomi, Rapor, Van", "Doğu Anadolu bölgesindeki illerin sosyo-ekonomik durum analizlerini ve kalkınma önceliklerini içeren araştırma raporu.", "", 3, "Ödünçte", "Ana Hizmet Binası", "1. Kat", "Dolap B", "Raf 2", 3],
-        ["B003", "Urartu Medeniyeti ve Van Kalesi", "868000100103", "978-605-222-333-1", "DEM-2025-012", "Prof. Dr. Kemal Alkan", "Kültür Bakanlığı Yayınları", 2019, 3, 410, "Türkçe", "Tarih ve Kültür", "Urartu, Tarih, Van Kalesi, Arkeoloji", "Urartu krallığının başkenti Tuşpa (Van) ve Van Kalesi çevresindeki arkeolojik kazıları, tarihi yapıyı inceleyen akademik eser.", "", 1, "Ödünçte", "Ana Hizmet Binası", "Zemin Kat", "Dolap A", "Raf 2", 5],
-        ["B004", "Dış Ticaret ve Gümrük Mevzuatı", "868000100104", "978-605-444-555-2", "DEM-2025-045", "Av. Caner Baş", "Seçkin Yayıncılık", 2023, 2, 380, "Türkçe", "Hukuk ve Mevzuat", "Dış Ticaret, Gümrük, Mevzuat, Hukuk", "Türkiye gümrük bölgesi giriş çıkış işlemleri, dış ticaret teşvikleri ve ilgili yasal yaptırımlar hakkında rehber niteliğinde çalışma.", "", 1, "Rafta", "Ek Hizmet Binası", "2. Kat", "Dolap C", "Raf 3", 2],
-        ["B005", "Girişimcilik ve Küçük İşletme Yönetimi", "868000100105", "978-605-666-777-3", "DEM-2026-003", "Prof. Dr. Leyla Şahin", "Beta Basım Yayım", 2024, 1, 290, "Türkçe", "Yönetim ve Girişimcilik", "Girişimcilik, KOBİ, Yönetim, İş Planı", "Yeni girişimlerin kurulması, KOBİ'lerin yönetimi, finansman bulma ve iş planı hazırlama süreçlerini anlatan rehber kitap.", "", 1, "Hasarlı", "Ana Hizmet Binası", "1. Kat", "Dolap B", "Raf 4", 1]
+        ["B001", "Van Ticaret ve Sanayi Odası Tarihçesi", "868000100101", "978-605-123-456-7", "DEM-2024-001", "Dr. Selim Uçar", "VANTSO Yayınları", 2018, 1, 180, "Türkçe", "VANTSO, Van, Ticaret, Tarihçe", "Van Ticaret ve Sanayi Odası'nın kuruluşundan günümüze kadar geçen süredeki kurumsal geçmişini ve ekonomik katkılarını inceleyen başvuru kaynağı.", "", 2, "Rafta", "Ana Hizmet Binası", "Zemin Kat", "Dolap A", "Raf 1", 1],
+        ["B002", "Bölgesel Kalkınma Raporu: Doğu Anadolu", "868000100102", "978-605-123-789-0", "DEM-2024-002", "VANTSO Araştırma Kurulu", "VANTSO Yayınları", 2021, 1, 250, "Türkçe", "Kalkınma, Ekonomi, Rapor, Van", "Doğu Anadolu bölgesindeki illerin sosyo-ekonomik durum analizlerini ve kalkınma önceliklerini içeren araştırma raporu.", "", 3, "Ödünçte", "Ana Hizmet Binası", "1. Kat", "Dolap B", "Raf 2", 3],
+        ["B003", "Urartu Medeniyeti ve Van Kalesi", "868000100103", "978-605-222-333-1", "DEM-2025-012", "Prof. Dr. Kemal Alkan", "Kültür Bakanlığı Yayınları", 2019, 3, 410, "Türkçe", "Urartu, Tarih, Van Kalesi, Arkeoloji", "Urartu krallığının başkenti Tuşpa (Van) ve Van Kalesi çevresindeki arkeolojik kazıları, tarihi yapıyı inceleyen akademik eser.", "", 1, "Ödünçte", "Ana Hizmet Binası", "Zemin Kat", "Dolap A", "Raf 2", 5],
+        ["B004", "Dış Ticaret ve Gümrük Mevzuatı", "868000100104", "978-605-444-555-2", "DEM-2025-045", "Av. Caner Baş", "Seçkin Yayıncılık", 2023, 2, 380, "Türkçe", "Dış Ticaret, Gümrük, Mevzuat, Hukuk", "Türkiye gümrük bölgesi giriş çıkış işlemleri, dış ticaret teşvikleri ve ilgili yasal yaptırımlar hakkında rehber niteliğinde çalışma.", "", 1, "Rafta", "Ek Hizmet Binası", "2. Kat", "Dolap C", "Raf 3", 2],
+        ["B005", "Girişimcilik ve Küçük İşletme Yönetimi", "868000100105", "978-605-666-777-3", "DEM-2026-003", "Prof. Dr. Leyla Şahin", "Beta Basım Yayım", 2024, 1, 290, "Türkçe", "Girişimcilik, KOBİ, Yönetim, İş Planı", "Yeni girişimlerin kurulması, KOBİ'lerin yönetimi, finansman bulma ve iş planı hazırlama süreçlerini anlatan rehber kitap.", "", 1, "Hasarlı", "Ana Hizmet Binası", "1. Kat", "Dolap B", "Raf 4", 1]
       ];
       for (const book of initialBooks) {
         await queryRun(`
           INSERT INTO books (
             id, name, barcode, isbn, fixtureNo, author, publisher, publishYear, edition, 
-            pageCount, language, category, keywords, summary, coverImage, totalCopies, 
+            pageCount, language, keywords, summary, coverImage, totalCopies, 
             status, loc_building, loc_floor, loc_cabinet, loc_shelf, loc_rowNo
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, book);
       }
 
@@ -225,10 +225,16 @@ export const initDb = async () => {
         await queryRun('UPDATE users SET email = "admin@vantso.org.tr", role = "Yönetici" WHERE id = "U001"');
       } else {
         await queryRun(
-          'INSERT INTO users (id, name, department, role, email, phone, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          ["U001", "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif"]
+          'INSERT INTO users (id, name, department, role, email, phone, status, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          ["U001", "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel"]
         );
       }
+    }
+
+    // Her durumda varsayılan admin şifresi ayar kaydının olduğundan emin ol
+    const passwordCheck = await queryGet('SELECT * FROM settings WHERE key = "admin_password"');
+    if (!passwordCheck) {
+      await queryRun("INSERT INTO settings (key, value) VALUES ('admin_password', 'vantso123')");
     }
   } catch (error) {
     console.error('Veritabanı başlatma hatası:', error);
