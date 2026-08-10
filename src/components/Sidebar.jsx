@@ -8,7 +8,6 @@ import {
   ArrowDownLeft, 
   Users, 
   History, 
-  FileBarChart2, 
   Settings, 
   ShieldCheck,
   LogOut
@@ -25,7 +24,6 @@ export default function Sidebar({ activeTab, setActiveTab, activeUser, onCloseSi
     { id: 'return', label: 'İade İşlemleri', icon: ArrowDownLeft, roles: ['Yönetici', 'Kütüphane Görevlisi'] },
     { id: 'users', label: 'Üye Yönetimi', icon: Users, roles: ['Yönetici'] },
     { id: 'history', label: 'Hareket Geçmişi', icon: History, roles: ['Yönetici', 'Kütüphane Görevlisi'] },
-    { id: 'reports', label: 'Raporlama', icon: FileBarChart2, roles: ['Yönetici'] },
     { id: 'settings', label: 'Sistem Ayarları', icon: Settings, roles: ['Yönetici'] },
   ];
 

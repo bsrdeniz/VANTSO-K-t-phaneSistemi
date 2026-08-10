@@ -9,7 +9,6 @@ import LendOperations from './components/LendOperations';
 import ReturnOperations from './components/ReturnOperations';
 import UserManagement from './components/UserManagement';
 import HistoryLogs from './components/HistoryLogs';
-import Reports from './components/Reports';
 import SettingsView from './components/Settings';
 import { api } from './services/api';
 import Login from './components/Login';
@@ -47,8 +46,6 @@ function App() {
         return <UserManagement />;
       case 'history':
         return <HistoryLogs />;
-      case 'reports':
-        return <Reports />;
       case 'settings':
         return <SettingsView />;
       default:
