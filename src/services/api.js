@@ -1,6 +1,8 @@
 // C:\Users\BÜŞRA DENİZ\Desktop\VANTSO-KütüphaneSistemi\src\services\api.js
 
-const API_BASE = 'http://localhost:5001/api';
+const API_BASE = window.location.port && window.location.port !== '5001'
+  ? `${window.location.protocol}//${window.location.hostname}:5001/api`
+  : '/api';
 
 const fetchJson = async (url, options = {}) => {
   const response = await fetch(url, {
@@ -84,18 +86,13 @@ export const api = {
   // Local Session simulator
   getActiveUser: () => {
     const user = sessionStorage.getItem('vantso_session_user');
-    return user ? JSON.parse(user) : {
-      id: 'U001',
-      name: 'Büşra Deniz',
-      department: 'Bilgi İşlem ve Ar-Ge',
-      role: 'Yönetici',
-      email: 'b.deniz@vantso.org.tr',
-      phone: '0555 123 45 67',
-      status: 'Aktif'
-    };
+    return user ? JSON.parse(user) : null;
   },
   setActiveUser: (user) => {
     sessionStorage.setItem('vantso_session_user', JSON.stringify(user));
+  },
+  logout: () => {
+    sessionStorage.removeItem('vantso_session_user');
   },
 
   // Calculate notifications locally on the frontend (keeps the UI fast)

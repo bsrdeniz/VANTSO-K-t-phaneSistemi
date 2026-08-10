@@ -10,16 +10,12 @@ import {
   History, 
   FileBarChart2, 
   Settings, 
-  ShieldCheck 
+  ShieldCheck,
+  LogOut
 } from 'lucide-react';
 import { api } from '../services/api';
 
-export default function Sidebar({ activeTab, setActiveTab, activeUser, onChangeUser }) {
-  const [users, setUsers] = React.useState([]);
-
-  React.useEffect(() => {
-    api.getUsers().then(setUsers).catch(console.error);
-  }, []);
+export default function Sidebar({ activeTab, setActiveTab, activeUser, onCloseSidebar, onLogout }) {
 
   const menuItems = [
     { id: 'dashboard', label: 'Gösterge Paneli', icon: LayoutDashboard, roles: ['Yönetici', 'Kütüphane Görevlisi', 'Personel'] },
@@ -41,9 +37,12 @@ export default function Sidebar({ activeTab, setActiveTab, activeUser, onChangeU
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        <div className="brand-logo">
-          <span>VAN</span>
-          <span>TSO</span>
+        <div className="sidebar-brand-header">
+          <div className="brand-logo">
+            <span>VAN</span>
+            <span>TSO</span>
+          </div>
+          <button className="sidebar-close-btn" onClick={onCloseSidebar} aria-label="Kapat">&times;</button>
         </div>
         <div className="brand-title">Kütüphane Otomasyonu</div>
       </div>
@@ -54,7 +53,10 @@ export default function Sidebar({ activeTab, setActiveTab, activeUser, onChangeU
           return (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => {
+                setActiveTab(item.id);
+                if (onCloseSidebar) onCloseSidebar();
+              }}
               className={`sidebar-link ${activeTab === item.id ? 'active' : ''}`}
             >
               <Icon size={18} />
@@ -66,33 +68,21 @@ export default function Sidebar({ activeTab, setActiveTab, activeUser, onChangeU
 
       <div className="sidebar-footer">
         <div className="user-profile-info">
-          <div className="user-avatar">
-            {activeUser ? activeUser.name.charAt(0) : 'U'}
-          </div>
-          <div className="user-details">
-            <div className="user-name">{activeUser ? activeUser.name : 'Misafir'}</div>
-            <div className="user-role-badge">
-              <ShieldCheck size={11} />
-              <span>{activeUser ? activeUser.role : 'Personel'}</span>
+          <div className="user-profile-main">
+            <div className="user-avatar">
+              {activeUser ? activeUser.name.charAt(0) : 'U'}
+            </div>
+            <div className="user-details">
+              <div className="user-name">{activeUser ? activeUser.name : 'Misafir'}</div>
+              <div className="user-role-badge">
+                <ShieldCheck size={11} />
+                <span>{activeUser ? activeUser.role : 'Personel'}</span>
+              </div>
             </div>
           </div>
-        </div>
-
-        <div className="role-selector-wrapper">
-          <label htmlFor="role-selector" className="role-selector-label">Aktif Kullanıcı Değiştir (Test):</label>
-          <select 
-            id="role-selector"
-            value={activeUser ? activeUser.id : ''}
-            onChange={(e) => {
-              const selected = users.find(u => u.id === e.target.value);
-              if (selected) onChangeUser(selected);
-            }}
-            className="role-selector"
-          >
-            {users.map(u => (
-              <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
-            ))}
-          </select>
+          <button className="sidebar-logout-btn" onClick={onLogout} title="Çıkış Yap" aria-label="Çıkış Yap">
+            <LogOut size={16} />
+          </button>
         </div>
       </div>
     </aside>

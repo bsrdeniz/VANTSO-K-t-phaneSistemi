@@ -1,6 +1,8 @@
 // C:\Users\BÜŞRA DENİZ\Desktop\VANTSO-KütüphaneSistemi\backend\server.js
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { 
   initDb, 
   queryAll, 
@@ -8,8 +10,11 @@ import {
   queryGet 
 } from './db.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-const PORT = 5001;
+const PORT = process.env.PORT || 5001;
 
 app.use(cors());
 app.use(express.json());
@@ -436,6 +441,18 @@ app.delete('/api/settings/locations', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// Serve static assets from the React frontend build folder (dist)
+app.use(express.static(path.join(__dirname, '../dist')));
+
+// Fallback to React index.html for single page application routing
+app.get('*', (req, res) => {
+  // If it's a call to the API that didn't match, return 404
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
 // Start Express Server

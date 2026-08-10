@@ -12,42 +12,29 @@ import HistoryLogs from './components/HistoryLogs';
 import Reports from './components/Reports';
 import SettingsView from './components/Settings';
 import { api } from './services/api';
+import Login from './components/Login';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [activeUser, setActiveUser] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     // Read session user on mount
     setActiveUser(api.getActiveUser());
   }, []);
 
-  const handleChangeUser = (newUser) => {
-    api.setActiveUser(newUser);
-    setActiveUser(newUser);
-    
-    // Check if the current tab is allowed for the new user, else fallback to dashboard
-    const tabPermissions = {
-      dashboard: ['Yönetici', 'Kütüphane Görevlisi', 'Personel'],
-      search: ['Yönetici', 'Kütüphane Görevlisi', 'Personel'],
-      books: ['Yönetici', 'Kütüphane Görevlisi'],
-      lend: ['Yönetici', 'Kütüphane Görevlisi'],
-      return: ['Yönetici', 'Kütüphane Görevlisi'],
-      users: ['Yönetici'],
-      history: ['Yönetici', 'Kütüphane Görevlisi'],
-      reports: ['Yönetici'],
-      settings: ['Yönetici']
-    };
-
-    if (!tabPermissions[activeTab]?.includes(newUser.role)) {
-      setActiveTab('dashboard');
-    }
+  // Close sidebar on navigation tab change
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setIsSidebarOpen(false);
   };
+
 
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard setActiveTab={setActiveTab} />;
+        return <Dashboard setActiveTab={handleTabChange} />;
       case 'search':
         return <BookSearch />;
       case 'books':
@@ -65,23 +52,40 @@ function App() {
       case 'settings':
         return <SettingsView />;
       default:
-        return <Dashboard setActiveTab={setActiveTab} />;
+        return <Dashboard setActiveTab={handleTabChange} />;
     }
   };
 
+  if (!activeUser) {
+    return <Login onLoginSuccess={setActiveUser} />;
+  }
+
   return (
-    <div className="app-container">
+    <div className={`app-container ${isSidebarOpen ? 'sidebar-open' : ''}`}>
+      {/* Mobile Sidebar Backdrop Overlay */}
+      {isSidebarOpen && (
+        <div className="sidebar-backdrop" onClick={() => setIsSidebarOpen(false)}></div>
+      )}
+
       {/* Navigation Sidebar */}
       <Sidebar 
         activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
+        setActiveTab={handleTabChange} 
         activeUser={activeUser}
-        onChangeUser={handleChangeUser}
+        onCloseSidebar={() => setIsSidebarOpen(false)}
+        onLogout={() => {
+          api.logout();
+          setActiveUser(null);
+        }}
       />
 
       {/* Main Panel */}
       <div className="main-wrapper">
-        <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+        <Header 
+          activeTab={activeTab} 
+          setActiveTab={handleTabChange} 
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        />
         
         <main className="main-content">
           {renderContent()}

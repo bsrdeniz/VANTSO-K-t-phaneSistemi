@@ -4,9 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"vite\" \"npm run dev --prefix backend\"",
     "server": "npm run dev --prefix backend",
-    "start": "concurrently \"npm run dev\" \"npm run server\"",
+    "start": "node backend/server.js",
+    "postinstall": "npm install --prefix backend",
     "setup": "npm install && npm install --prefix backend",
     "build": "vite build",
     "lint": "oxlint",

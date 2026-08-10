@@ -1,9 +1,9 @@
 // C:\Users\BÜŞRA DENİZ\Desktop\VANTSO-KütüphaneSistemi\src\components\Header.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Calendar, Clock, AlertTriangle, AlertCircle, Check } from 'lucide-react';
+import { Bell, Calendar, Clock, AlertTriangle, AlertCircle, Check, Menu } from 'lucide-react';
 import { api } from '../services/api';
 
-export default function Header({ activeTab, setActiveTab }) {
+export default function Header({ activeTab, setActiveTab, onToggleSidebar }) {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -66,6 +66,9 @@ export default function Header({ activeTab, setActiveTab }) {
 
   return (
     <header className="main-header">
+      <button className="mobile-menu-btn" onClick={onToggleSidebar} aria-label="Menü">
+        <Menu size={22} />
+      </button>
       <div className="header-title-section">
         <div className="breadcrumb">VANTSO Kütüphane / {getTitle()}</div>
         <h1>{getTitle()}</h1>
