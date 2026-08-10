@@ -191,7 +191,7 @@ app.post('/api/users', async (req, res) => {
 
     await queryRun(
       'INSERT INTO users (id, name, department, role, email, phone, status, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [userId, name, department, role, email, phone, status || 'Aktif', type || 'Personel']
+      [userId, name, department || 'Genel', role || 'Personel', email, phone, status || 'Aktif', type || 'Personel']
     );
 
     await addLog(actorId, 'Kullanıcı Ekleme', `"${name}" adlı üye sisteme eklendi.`);
@@ -209,7 +209,7 @@ app.put('/api/users/:id', async (req, res) => {
 
     const result = await queryRun(
       'UPDATE users SET name = ?, department = ?, role = ?, email = ?, phone = ?, status = ?, type = ? WHERE id = ?',
-      [name, department, role, email, phone, status, type || 'Personel', id]
+      [name, department || 'Genel', role || 'Personel', email, phone, status, type || 'Personel', id]
     );
 
     if (result.changes === 0) {

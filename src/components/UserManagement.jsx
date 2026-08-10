@@ -1,6 +1,6 @@
 // C:\Users\BÜŞRA DENİZ\Desktop\VANTSO-KütüphaneSistemi\src\components\UserManagement.jsx
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, User, Mail, Phone, Shield, UserCheck } from 'lucide-react';
+import { Plus, Edit2, Trash2, User, Mail, Phone } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function UserManagement() {
@@ -12,12 +12,12 @@ export default function UserManagement() {
   const [formData, setFormData] = useState({
     id: '',
     name: '',
-    department: '',
-    role: 'Personel', // Yönetici, Kütüphane Görevlisi, Personel
+    department: 'Genel',
+    role: 'Personel', 
     email: '',
     phone: '',
-    status: 'Aktif', // Aktif, Pasif
-    type: 'Personel' // Personel, Dış Kullanıcı
+    status: 'Aktif', 
+    type: 'Personel' 
   });
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export default function UserManagement() {
     setFormData({
       id: '',
       name: '',
-      department: '',
+      department: 'Genel',
       role: 'Personel',
       email: '',
       phone: '',
@@ -53,6 +53,8 @@ export default function UserManagement() {
     setEditMode(true);
     setFormData({ 
       ...user,
+      department: user.department || 'Genel',
+      role: user.role || 'Personel',
       type: user.type || 'Personel'
     });
     setIsModalOpen(true);
@@ -80,7 +82,7 @@ export default function UserManagement() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.department || !formData.email || !formData.phone) {
+    if (!formData.name || !formData.email || !formData.phone) {
       alert('Lütfen tüm zorunlu alanları doldurun!');
       return;
     }
@@ -101,7 +103,7 @@ export default function UserManagement() {
   return (
     <div className="user-management-view">
       <div className="view-actions-bar mb-4">
-        <h2>Kütüphane Üye & Personel Listesi</h2>
+        <h2>Kütüphane Üye Listesi</h2>
         <button className="btn btn-primary" onClick={handleOpenAddModal}>
           <Plus size={16} /> Yeni Üye Ekle
         </button>
@@ -115,9 +117,6 @@ export default function UserManagement() {
               <tr>
                 <th>Üye ID</th>
                 <th>Ad Soyad</th>
-                <th>Üye Tipi</th>
-                <th>Birim (Departman)</th>
-                <th>Görev (Rol Yetkisi)</th>
                 <th>E-posta</th>
                 <th>Telefon</th>
                 <th>Durum</th>
@@ -131,7 +130,7 @@ export default function UserManagement() {
                   <td>
                     <div className="table-user-row">
                       <div className="mini-avatar" style={{
-                        backgroundColor: user.type === 'Dış Kullanıcı' ? '#d97706' : 'var(--primary-color)'
+                        backgroundColor: 'var(--primary-color)'
                       }}>
                         {user.name.charAt(0)}
                       </div>
@@ -139,20 +138,6 @@ export default function UserManagement() {
                         <strong>{user.name}</strong>
                       </div>
                     </div>
-                  </td>
-                  <td>
-                    <span className={`badge ${user.type === 'Dış Kullanıcı' ? 'badge-hasarli' : 'badge-rafta'}`}>
-                      {user.type === 'Dış Kullanıcı' ? 'Dış Üye' : 'VANTSO Personeli'}
-                    </span>
-                  </td>
-                  <td>{user.department}</td>
-                  <td>
-                    <span className={`user-role-lbl ${
-                      user.role === 'Yönetici' ? 'text-primary-bold' : 
-                      user.role === 'Kütüphane Görevlisi' ? 'text-secondary-bold' : 'text-muted-normal'
-                    }`}>
-                      {user.role}
-                    </span>
                   </td>
                   <td>
                     <div className="td-flex-icon"><Mail size={12} /> {user.email}</div>
@@ -203,27 +188,6 @@ export default function UserManagement() {
               <div className="modal-body">
                 
                 <div className="form-group">
-                  <label className="form-label"><UserCheck size={14} /> Üye Tipi</label>
-                  <select 
-                    name="type"
-                    className="form-control" 
-                    value={formData.type || 'Personel'}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormData(prev => ({
-                        ...prev,
-                        type: val,
-                        department: val === 'Dış Kullanıcı' ? 'Kurum Dışı' : prev.department === 'Kurum Dışı' ? '' : prev.department,
-                        role: val === 'Dış Kullanıcı' ? 'Personel' : prev.role
-                      }));
-                    }}
-                  >
-                    <option value="Personel">VANTSO Kurumsal Personeli</option>
-                    <option value="Dış Kullanıcı">Dışarıdan Üye / Ziyaretçi</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
                   <label className="form-label"><User size={14} /> Ad Soyad *</label>
                   <input 
                     type="text" 
@@ -234,36 +198,6 @@ export default function UserManagement() {
                     required
                     placeholder="Örn: Ahmet Yılmaz"
                   />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Birim / Departman *</label>
-                    <input 
-                      type="text" 
-                      name="department"
-                      className="form-control" 
-                      value={formData.department}
-                      onChange={handleInputChange}
-                      required
-                      disabled={formData.type === 'Dış Kullanıcı'}
-                      placeholder={formData.type === 'Dış Kullanıcı' ? 'Kurum Dışı' : "Örn: Basın ve Halkla İlişkiler"}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label"><Shield size={14} /> Sistem Rol Yetkisi</label>
-                    <select 
-                      name="role"
-                      className="form-control" 
-                      value={formData.role}
-                      onChange={handleInputChange}
-                      disabled={formData.type === 'Dış Kullanıcı'}
-                    >
-                      <option value="Yönetici">Yönetici (Tüm modüllere erişebilir)</option>
-                      <option value="Kütüphane Görevlisi">Kütüphane Görevlisi (Kitap/Ödünç yönetir)</option>
-                      <option value="Personel">Standart Personel (Yalnızca kitap arar)</option>
-                    </select>
-                  </div>
                 </div>
 
                 <div className="form-row">
