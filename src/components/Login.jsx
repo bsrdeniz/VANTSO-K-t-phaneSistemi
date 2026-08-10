@@ -8,30 +8,19 @@ export default function Login({ onLoginSuccess }) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Simulate short network delay for aesthetics
-    setTimeout(() => {
-      if (email.trim() === 'admin@vantso.org.tr' && password === 'vantso123') {
-        const adminUser = {
-          id: 'U001',
-          name: 'Büşra Deniz',
-          department: 'Bilgi İşlem ve Ar-Ge',
-          role: 'Yönetici',
-          email: 'admin@vantso.org.tr',
-          phone: '0555 123 45 67',
-          status: 'Aktif'
-        };
-        api.setActiveUser(adminUser);
-        onLoginSuccess(adminUser);
-      } else {
-        setError('E-posta adresi veya şifre hatalı!');
-        setIsLoading(false);
-      }
-    }, 800);
+    try {
+      const user = await api.login(email, password);
+      api.setActiveUser(user);
+      onLoginSuccess(user);
+    } catch (err) {
+      setError(err.message || 'E-posta adresi veya şifre hatalı!');
+      setIsLoading(false);
+    }
   };
 
   return (

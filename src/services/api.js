@@ -94,6 +94,10 @@ export const api = {
   logout: () => {
     sessionStorage.removeItem('vantso_session_user');
   },
+  login: (email, password) => fetchJson(`${API_BASE}/login`, {
+    method: 'POST',
+    body: JSON.stringify({ email, password })
+  }),
 
   // Calculate notifications locally on the frontend (keeps the UI fast)
   getNotifications: (records, books, users, warningDays = 3) => {

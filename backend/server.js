@@ -443,6 +443,34 @@ app.delete('/api/settings/locations', async (req, res) => {
   }
 });
 
+// Authentication endpoint (verifies admin login against SQLite)
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (password !== 'vantso123') {
+      return res.status(401).json({ error: 'Hatalı şifre!' });
+    }
+    
+    // Query db for the user with the given email (must be Admin/Yönetici)
+    const user = await queryGet('SELECT * FROM users WHERE email = ? AND status = "Aktif"', [email.trim()]);
+    if (!user) {
+      return res.status(401).json({ error: 'Giriş yetkisi bulunmayan e-posta adresi!' });
+    }
+    
+    res.json({
+      id: user.id,
+      name: user.name,
+      department: user.department,
+      role: user.role,
+      email: user.email,
+      phone: user.phone,
+      status: user.status
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Serve static assets from the React frontend build folder (dist)
 app.use(express.static(path.join(__dirname, '../dist')));
 

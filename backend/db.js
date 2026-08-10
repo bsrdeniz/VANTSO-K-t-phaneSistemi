@@ -164,7 +164,7 @@ export const initDb = async () => {
 
       // Seed Users
       const initialUsers = [
-        ["U001", "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "b.deniz@vantso.org.tr", "0555 123 45 67", "Aktif"],
+        ["U001", "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif"],
         ["U002", "Ahmet Yılmaz", "Genel Sekreterlik", "Kütüphane Görevlisi", "a.yilmaz@vantso.org.tr", "0532 987 65 43", "Aktif"],
         ["U003", "Mehmet Kaya", "Ticaret Sicil", "Personel", "m.kaya@vantso.org.tr", "0544 555 66 77", "Aktif"],
         ["U004", "Ayşe Demir", "Basın ve Halkla İlişkiler", "Personel", "a.demir@vantso.org.tr", "0505 111 22 33", "Aktif"]
@@ -215,6 +215,20 @@ export const initDb = async () => {
       console.log('Örnek veriler başarıyla yüklendi.');
     } else {
       console.log('Veritabanında kayıtlı veriler mevcut, yükleme atlandı.');
+    }
+
+    // Her durumda admin@vantso.org.tr kullanıcısının veritabanında doğru ve güncel olduğundan emin ol
+    const adminCheck = await queryGet('SELECT * FROM users WHERE email = ?', ['admin@vantso.org.tr']);
+    if (!adminCheck) {
+      const u001Check = await queryGet('SELECT * FROM users WHERE id = "U001"');
+      if (u001Check) {
+        await queryRun('UPDATE users SET email = "admin@vantso.org.tr", role = "Yönetici" WHERE id = "U001"');
+      } else {
+        await queryRun(
+          'INSERT INTO users (id, name, department, role, email, phone, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          ["U001", "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif"]
+        );
+      }
     }
   } catch (error) {
     console.error('Veritabanı başlatma hatası:', error);
