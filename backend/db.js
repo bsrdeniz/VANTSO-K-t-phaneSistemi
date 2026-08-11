@@ -7,28 +7,51 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dbPath = path.resolve(__dirname, 'database.sqlite');
 
-export const isPg = !!process.env.DATABASE_URL;
+export const isPg = !!process.env.DATABASE_URL && 
+                     (process.env.DATABASE_URL.startsWith('postgres://') || 
+                      process.env.DATABASE_URL.startsWith('postgresql://'));
 let sqliteDb = null;
 let pgPool = null;
 
 if (isPg) {
   console.log('PostgreSQL bağlantısı kuruluyor (Railway)...');
   
-  // Sabotaj önleme: Railway bazen lokal soket yollarını (PGHOST=/data/) çevre değişkeni olarak enjekte edebilir.
-  // Bunları temizleyip pg kütüphanesini sadece DATABASE_URL kullanmaya zorluyoruz.
+  // Sabotaj önleme: pg kütüphanesinin önbelleğe aldığı çevre değişkenlerini sıfırlıyoruz.
+  if (pg.defaults) {
+    pg.defaults.host = null;
+    pg.defaults.port = null;
+    pg.defaults.database = null;
+    pg.defaults.user = null;
+    pg.defaults.password = null;
+  }
+  
   const dbUrl = process.env.DATABASE_URL;
-  delete process.env.PGHOST;
-  delete process.env.PGPORT;
-  delete process.env.PGUSER;
-  delete process.env.PGPASSWORD;
-  delete process.env.PGDATABASE;
+  let poolConfig = {};
+  
+  try {
+    const parsed = new URL(dbUrl);
+    poolConfig = {
+      host: parsed.hostname,
+      port: parsed.port ? parseInt(parsed.port, 10) : 5432,
+      user: parsed.username,
+      password: parsed.password ? decodeURIComponent(parsed.password) : undefined,
+      database: parsed.pathname ? parsed.pathname.slice(1) : undefined,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    };
+    console.log('PostgreSQL bağlantı parametreleri başarıyla ayrıştırıldı. Host:', poolConfig.host);
+  } catch (e) {
+    console.error('DATABASE_URL ayrıştırma hatası. Düz metin olarak bağlanılıyor...', e.message);
+    poolConfig = {
+      connectionString: dbUrl,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    };
+  }
 
-  pgPool = new pg.Pool({
-    connectionString: dbUrl,
-    ssl: {
-      rejectUnauthorized: false
-    }
-  });
+  pgPool = new pg.Pool(poolConfig);
 } else {
   console.log('SQLite bağlantısı kuruluyor (Local)...');
   sqliteDb = new sqlite3.Database(dbPath, (err) => {
