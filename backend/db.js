@@ -1,5 +1,5 @@
-// C:\Users\BÜŞRA DENİZ\Desktop\VANTSO-KütüphaneSistemi\backend\db.js
 import sqlite3 from 'sqlite3';
+import pg from 'pg';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -7,49 +7,100 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dbPath = path.resolve(__dirname, 'database.sqlite');
 
-// Open connection to SQLite
-const sqliteDb = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('SQLite veritabanı bağlantı hatası:', err.message);
-  } else {
-    console.log('SQLite veritabanına başarıyla bağlanıldı.');
-  }
-});
+export const isPg = !!process.env.DATABASE_URL;
+let sqliteDb = null;
+let pgPool = null;
+
+if (isPg) {
+  console.log('PostgreSQL bağlantısı kuruluyor (Railway)...');
+  pgPool = new pg.Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false
+    }
+  });
+} else {
+  console.log('SQLite bağlantısı kuruluyor (Local)...');
+  sqliteDb = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+      console.error('SQLite veritabanı bağlantı hatası:', err.message);
+    } else {
+      console.log('SQLite veritabanına başarıyla bağlanıldı.');
+    }
+  });
+}
+
+// Convert ? SQL placeholders to $1, $2... for PostgreSQL
+function convertPlaceholders(sql) {
+  if (!isPg) return sql;
+  let count = 1;
+  return sql.replace(/\?/g, () => `$${count++}`);
+}
 
 // Helper utilities to use Promise-based syntax
-export const queryAll = (sql, params = []) => new Promise((resolve, reject) => {
-  sqliteDb.all(sql, params, (err, rows) => {
-    if (err) reject(err);
-    else resolve(rows);
-  });
-});
+export const queryAll = async (sql, params = []) => {
+  if (isPg) {
+    const pgSql = convertPlaceholders(sql);
+    const result = await pgPool.query(pgSql, params);
+    return result.rows;
+  } else {
+    return new Promise((resolve, reject) => {
+      sqliteDb.all(sql, params, (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    });
+  }
+};
 
-export const queryRun = (sql, params = []) => new Promise((resolve, reject) => {
-  sqliteDb.run(sql, params, function(err) {
-    if (err) reject(err);
-    else resolve({ lastID: this.lastID, changes: this.changes });
-  });
-});
+export const queryRun = async (sql, params = []) => {
+  if (isPg) {
+    const pgSql = convertPlaceholders(sql);
+    const result = await pgPool.query(pgSql, params);
+    return { lastID: result.insertId || null, changes: result.rowCount };
+  } else {
+    return new Promise((resolve, reject) => {
+      sqliteDb.run(sql, params, function(err) {
+        if (err) reject(err);
+        else resolve({ lastID: this.lastID, changes: this.changes });
+      });
+    });
+  }
+};
 
-export const queryGet = (sql, params = []) => new Promise((resolve, reject) => {
-  sqliteDb.get(sql, params, (err, row) => {
-    if (err) reject(err);
-    else resolve(row);
-  });
-});
+export const queryGet = async (sql, params = []) => {
+  if (isPg) {
+    const pgSql = convertPlaceholders(sql);
+    const result = await pgPool.query(pgSql, params);
+    return result.rows[0] || null;
+  } else {
+    return new Promise((resolve, reject) => {
+      sqliteDb.get(sql, params, (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+  }
+};
 
 // Initialize database schemas
 export const initDb = async () => {
   try {
     // 1. Create Tables
-    await queryRun(`
-      CREATE TABLE IF NOT EXISTS locations (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        type TEXT NOT NULL, -- building, floor, cabinet, shelf
-        value TEXT NOT NULL,
-        UNIQUE(type, value)
-      )
-    `);
+    const locationsSql = isPg
+      ? `CREATE TABLE IF NOT EXISTS locations (
+          id SERIAL PRIMARY KEY,
+          type TEXT NOT NULL,
+          value TEXT NOT NULL,
+          UNIQUE(type, value)
+        )`
+      : `CREATE TABLE IF NOT EXISTS locations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          type TEXT NOT NULL, -- building, floor, cabinet, shelf
+          value TEXT NOT NULL,
+          UNIQUE(type, value)
+        )`;
+    await queryRun(locationsSql);
 
     await queryRun(`
       CREATE TABLE IF NOT EXISTS books (
