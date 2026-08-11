@@ -13,8 +13,18 @@ let pgPool = null;
 
 if (isPg) {
   console.log('PostgreSQL bağlantısı kuruluyor (Railway)...');
+  
+  // Sabotaj önleme: Railway bazen lokal soket yollarını (PGHOST=/data/) çevre değişkeni olarak enjekte edebilir.
+  // Bunları temizleyip pg kütüphanesini sadece DATABASE_URL kullanmaya zorluyoruz.
+  const dbUrl = process.env.DATABASE_URL;
+  delete process.env.PGHOST;
+  delete process.env.PGPORT;
+  delete process.env.PGUSER;
+  delete process.env.PGPASSWORD;
+  delete process.env.PGDATABASE;
+
   pgPool = new pg.Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: dbUrl,
     ssl: {
       rejectUnauthorized: false
     }
