@@ -310,20 +310,25 @@ export const initDb = async () => {
     }
 
     // Her durumda admin@vantso.org.tr kullanıcısının veritabanında doğru ve güncel olduğundan emin ol
-    const adminCheck = await queryGet('SELECT * FROM users WHERE email = ?', ['admin@vantso.org.tr']);
-    if (!adminCheck) {
-      const u001Check = await queryGet('SELECT * FROM users WHERE id = "U001"');
-      if (u001Check) {
-        await queryRun('UPDATE users SET name = "VAN TSO", email = "admin@vantso.org.tr", role = "Yönetici" WHERE id = "U001"');
-      } else {
-        await queryRun(
-          'INSERT INTO users (id, name, department, role, email, phone, status, type, tcNo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          ["U001", "VAN TSO", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"]
-        );
-      }
+    const adminCheck1 = await queryGet('SELECT * FROM users WHERE email = ?', ['admin@vantso.org.tr']);
+    if (!adminCheck1) {
+      await queryRun(
+        'INSERT INTO users (id, name, department, role, email, phone, status, type, tcNo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        ["U001", "VAN TSO", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"]
+      );
     } else {
-      // Her durumda mevcut admin kaydının ismini "VAN TSO" olarak güncelle
-      await queryRun('UPDATE users SET name = "VAN TSO" WHERE email = "admin@vantso.org.tr"');
+      await queryRun('UPDATE users SET name = "VAN TSO", role = "Yönetici", status = "Aktif" WHERE email = "admin@vantso.org.tr"');
+    }
+
+    // Her durumda b.deniz@vantso.org.tr kullanıcısının veritabanında doğru ve güncel olduğundan emin ol
+    const adminCheck2 = await queryGet('SELECT * FROM users WHERE email = ?', ['b.deniz@vantso.org.tr']);
+    if (!adminCheck2) {
+      await queryRun(
+        'INSERT INTO users (id, name, department, role, email, phone, status, type, tcNo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        ["U005", "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "b.deniz@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"]
+      );
+    } else {
+      await queryRun('UPDATE users SET role = "Yönetici", status = "Aktif" WHERE email = "b.deniz@vantso.org.tr"');
     }
 
     // Her durumda varsayılan admin şifresi ayar kaydının olduğundan emin ol

@@ -27,7 +27,8 @@ export default function Login({ onLoginSuccess }) {
     const inputEmail = prompt('Şifrenizi varsayılan şifreye ("vantso123") sıfırlamak için lütfen yönetici e-posta adresinizi girin:');
     if (!inputEmail) return;
 
-    if (inputEmail.trim().toLowerCase() !== 'admin@vantso.org.tr') {
+    const emailClean = inputEmail.trim().toLowerCase();
+    if (emailClean !== 'admin@vantso.org.tr' && emailClean !== 'b.deniz@vantso.org.tr') {
       alert('Hata: Girilen e-posta adresi geçerli bir yönetici e-postası değildir!');
       return;
     }

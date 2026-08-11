@@ -367,7 +367,8 @@ app.post('/api/settings/force-change-password', async (req, res) => {
 app.post('/api/settings/reset-password', async (req, res) => {
   try {
     const { email } = req.body;
-    if (email !== 'admin@vantso.org.tr') {
+    const emailClean = email.trim().toLowerCase();
+    if (emailClean !== 'admin@vantso.org.tr' && emailClean !== 'b.deniz@vantso.org.tr') {
       return res.status(400).json({ error: 'Geçersiz e-posta adresi.' });
     }
     await queryRun('UPDATE settings SET value = "vantso123" WHERE key = "admin_password"');
@@ -480,7 +481,7 @@ app.delete('/api/settings/locations', async (req, res) => {
   }
 });
 
-// Authentication endpoint (verifies admin login against SQLite)
+// Authentication endpoint (verifies admin login against SQLite/PostgreSQL)
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -492,8 +493,8 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ error: 'Hatalı şifre!' });
     }
     
-    // Query db for the user with the given email (must be Admin/Yönetici)
-    const user = await queryGet('SELECT * FROM users WHERE email = ? AND status = "Aktif"', [email.trim()]);
+    // Query db for the user with the given email (case-insensitive)
+    const user = await queryGet('SELECT * FROM users WHERE LOWER(email) = LOWER(?) AND status = "Aktif"', [email.trim()]);
     if (!user) {
       return res.status(401).json({ error: 'Giriş yetkisi bulunmayan e-posta adresi!' });
     }
