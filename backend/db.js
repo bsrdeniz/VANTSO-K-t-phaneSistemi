@@ -223,7 +223,7 @@ export const initDb = async () => {
 
       // Seed Users
       const initialUsers = [
-        ["U001", "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"],
+        ["U001", "VAN TSO", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"],
         ["U002", "Ahmet Yılmaz", "Genel Sekreterlik", "Kütüphane Görevlisi", "a.yilmaz@vantso.org.tr", "0532 987 65 43", "Aktif", "Personel", "22222222222"],
         ["U003", "Mehmet Kaya", "Ticaret Sicil", "Personel", "m.kaya@vantso.org.tr", "0544 555 66 77", "Aktif", "Personel", "33333333333"],
         ["U004", "Ahmet Arslan", "Kurum Dışı", "Personel", "ahmet.arslan@gmail.com", "0505 111 22 33", "Aktif", "Dış Kullanıcı", "44444444444"]
@@ -281,13 +281,16 @@ export const initDb = async () => {
     if (!adminCheck) {
       const u001Check = await queryGet('SELECT * FROM users WHERE id = "U001"');
       if (u001Check) {
-        await queryRun('UPDATE users SET email = "admin@vantso.org.tr", role = "Yönetici" WHERE id = "U001"');
+        await queryRun('UPDATE users SET name = "VAN TSO", email = "admin@vantso.org.tr", role = "Yönetici" WHERE id = "U001"');
       } else {
         await queryRun(
           'INSERT INTO users (id, name, department, role, email, phone, status, type, tcNo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          ["U001", "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"]
+          ["U001", "VAN TSO", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"]
         );
       }
+    } else {
+      // Her durumda mevcut admin kaydının ismini "VAN TSO" olarak güncelle
+      await queryRun('UPDATE users SET name = "VAN TSO" WHERE email = "admin@vantso.org.tr"');
     }
 
     // Her durumda varsayılan admin şifresi ayar kaydının olduğundan emin ol
