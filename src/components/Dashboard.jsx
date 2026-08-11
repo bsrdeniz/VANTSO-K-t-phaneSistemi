@@ -246,28 +246,6 @@ export default function Dashboard({ setActiveTab }) {
               )}
             </div>
           </div>
-
-          {/* Recent Action Logs */}
-          <div className="card dashboard-card">
-            <div className="card-title">
-              <span>Son Sistem Hareketleri</span>
-              <History size={16} className="text-muted" />
-            </div>
-            <div className="logs-timeline">
-              {recentLogs.map((log) => (
-                <div key={log.id} className="timeline-item">
-                  <div className="timeline-dot"></div>
-                  <div className="timeline-content">
-                    <div className="timeline-header">
-                      <span className="timeline-action">{log.action}</span>
-                      <span className="timeline-time">{new Date(log.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                    <p className="timeline-details">{log.details}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </div>
