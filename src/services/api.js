@@ -75,6 +75,14 @@ export const api = {
     method: 'POST',
     body: JSON.stringify({ currentPassword, newPassword, actorId })
   }),
+  forceChangePassword: (newPassword, actorId) => fetchJson(`${API_BASE}/settings/force-change-password`, {
+    method: 'POST',
+    body: JSON.stringify({ newPassword, actorId })
+  }),
+  resetPassword: (email) => fetchJson(`${API_BASE}/settings/reset-password`, {
+    method: 'POST',
+    body: JSON.stringify({ email })
+  }),
   addLocation: (type, value, actorId) => fetchJson(`${API_BASE}/settings/locations`, {
     method: 'POST',
     body: JSON.stringify({ type, value, actorId })

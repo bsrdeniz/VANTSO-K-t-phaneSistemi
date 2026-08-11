@@ -351,6 +351,33 @@ app.delete('/api/logs/:id', async (req, res) => {
   }
 });
 
+// Force change password (directly, without old password verification)
+app.post('/api/settings/force-change-password', async (req, res) => {
+  try {
+    const { newPassword, actorId } = req.body;
+    await queryRun('UPDATE settings SET value = ? WHERE key = "admin_password"', [newPassword]);
+    await addLog(actorId, 'Şifre Güncelleme', 'Yönetici giriş şifresi doğrudan güncellendi.');
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Reset password to default
+app.post('/api/settings/reset-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (email !== 'admin@vantso.org.tr') {
+      return res.status(400).json({ error: 'Geçersiz e-posta adresi.' });
+    }
+    await queryRun('UPDATE settings SET value = "vantso123" WHERE key = "admin_password"');
+    await addLog('Sistem', 'Şifre Sıfırlama', 'Yönetici şifresi varsayılan şifreye ("vantso123") sıfırlandı.');
+    res.json({ success: true, message: 'Şifreniz başarıyla varsayılan şifre ("vantso123") olarak güncellenmiştir!' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ==========================================
 // SETTINGS API
 // ==========================================

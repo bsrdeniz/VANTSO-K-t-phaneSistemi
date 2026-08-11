@@ -1,11 +1,10 @@
 // C:\Users\BÜŞRA DENİZ\Desktop\VANTSO-KütüphaneSistemi\src\components\Settings.jsx
 import React, { useState, useEffect } from 'react';
-import { ShieldAlert, ShieldCheck, Key, Lock } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Lock } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function SettingsView() {
   const [activeUser, setActiveUser] = useState(null);
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
@@ -22,7 +21,7 @@ export default function SettingsView() {
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
+    if (!newPassword || !confirmPassword) {
       setErrorMsg('Lütfen tüm alanları doldurun!');
       return;
     }
@@ -39,11 +38,10 @@ export default function SettingsView() {
 
     setIsLoading(true);
     try {
-      await api.changePassword(currentPassword, newPassword, activeUser?.id);
+      await api.forceChangePassword(newPassword, activeUser?.id);
       setSuccessMsg('Giriş şifreniz başarıyla güncellendi.');
       
       // Reset inputs
-      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err) {
@@ -93,20 +91,6 @@ export default function SettingsView() {
         )}
 
         <form onSubmit={handleChangePassword}>
-          <div className="form-group mb-4">
-            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '500', marginBottom: '6px' }}>
-              <Key size={14} /> Mevcut Şifre
-            </label>
-            <input 
-              type="password" 
-              className="form-control"
-              placeholder="Sisteme giriş yaptığınız mevcut şifreniz"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              required
-            />
-          </div>
-
           <div className="form-group mb-4">
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '500', marginBottom: '6px' }}>
               <Lock size={14} /> Yeni Şifre
