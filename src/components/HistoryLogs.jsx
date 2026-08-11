@@ -1,6 +1,6 @@
 // C:\Users\BÜŞRA DENİZ\Desktop\VANTSO-KütüphaneSistemi\src\components\HistoryLogs.jsx
 import React, { useState, useEffect } from 'react';
-import { History, Search, Filter, Trash2, ShieldAlert } from 'lucide-react';
+import { History, Search, Filter, Trash2 } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function HistoryLogs() {
@@ -11,19 +11,20 @@ export default function HistoryLogs() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAction, setSelectedAction] = useState('');
 
+  const loadLogs = async () => {
+    try {
+      const [logsData, usersData] = await Promise.all([
+        api.getLogs(),
+        api.getUsers()
+      ]);
+      setLogs(logsData);
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Log verileri yüklenirken hata:', error);
+    }
+  };
+
   useEffect(() => {
-    const loadLogs = async () => {
-      try {
-        const [logsData, usersData] = await Promise.all([
-          api.getLogs(),
-          api.getUsers()
-        ]);
-        setLogs(logsData);
-        setUsers(usersData);
-      } catch (error) {
-        console.error('Log verileri yüklenirken hata:', error);
-      }
-    };
     loadLogs();
   }, []);
 
@@ -40,6 +41,17 @@ export default function HistoryLogs() {
     if (userId === 'Sistem') return 'Sistem';
     const user = users.find(u => u.id === userId);
     return user ? `${user.name} (${user.role})` : userId;
+  };
+
+  const handleDeleteLog = async (id) => {
+    if (confirm('Bu hareket kaydını sistemden silmek istediğinize emin misiniz?')) {
+      try {
+        await api.deleteLog(id);
+        loadLogs();
+      } catch (error) {
+        alert('Hata: ' + error.message);
+      }
+    }
   };
 
   return (
@@ -77,12 +89,6 @@ export default function HistoryLogs() {
         </div>
       </div>
 
-      {/* Info Badge */}
-      <div className="system-notice-badge mb-4">
-        <ShieldAlert size={16} />
-        <span>Önemli Not: Sistem logları, kurumsal bilgi ve envanter güvenliği amacıyla **silinemez ve değiştirilemez** şekilde kayıt altına alınmaktadır.</span>
-      </div>
-
       {/* Logs Table */}
       <div className="card p-0">
         <div className="table-responsive">
@@ -93,12 +99,13 @@ export default function HistoryLogs() {
                 <th>İşlem Türü</th>
                 <th>İşlemi Yapan</th>
                 <th>Detaylar</th>
+                <th className="text-center">İşlemler</th>
               </tr>
             </thead>
             <tbody>
               {filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="text-center p-4">Arama kriterlerine uygun sistem hareketi bulunamadı.</td>
+                  <td colSpan="5" className="text-center p-4">Arama kriterlerine uygun sistem hareketi bulunamadı.</td>
                 </tr>
               ) : (
                 filteredLogs.map((log) => (
@@ -120,6 +127,16 @@ export default function HistoryLogs() {
                     </td>
                     <td>{getUserName(log.userId)}</td>
                     <td className="text-muted">{log.details}</td>
+                    <td className="text-center">
+                      <button 
+                        onClick={() => handleDeleteLog(log.id)}
+                        className="btn btn-danger btn-sm"
+                        title="Hareketi Sil"
+                        style={{ padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <Trash2 size={12} /> Sil
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}

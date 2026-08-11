@@ -340,6 +340,17 @@ app.get('/api/logs', async (req, res) => {
   }
 });
 
+// Delete a specific system log
+app.delete('/api/logs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await queryRun('DELETE FROM system_logs WHERE id = ?', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ==========================================
 // SETTINGS API
 // ==========================================

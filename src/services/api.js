@@ -61,6 +61,9 @@ export const api = {
 
   // Logs
   getLogs: () => fetchJson(`${API_BASE}/logs`),
+  deleteLog: (id) => fetchJson(`${API_BASE}/logs/${id}`, {
+    method: 'DELETE'
+  }),
 
   // Settings
   getSettings: () => fetchJson(`${API_BASE}/settings`),
