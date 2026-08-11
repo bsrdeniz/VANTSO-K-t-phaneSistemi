@@ -494,7 +494,26 @@ app.post('/api/login', async (req, res) => {
     }
     
     // Query db for the user with the given email (case-insensitive)
-    const user = await queryGet('SELECT * FROM users WHERE LOWER(email) = LOWER(?) AND status = "Aktif"', [email.trim()]);
+    let user = await queryGet('SELECT * FROM users WHERE LOWER(email) = LOWER(?) AND status = "Aktif"', [email.trim()]);
+    
+    // Güvenlik ve Sıfırlama Koruması: Eğer yönetici e-postaları veritabanında yoksa anında oluştur
+    if (!user) {
+      const emailClean = email.trim().toLowerCase();
+      if (emailClean === 'admin@vantso.org.tr') {
+        await queryRun(
+          'INSERT INTO users (id, name, department, role, email, phone, status, type, tcNo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          ["U001", "VAN TSO", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"]
+        );
+        user = await queryGet('SELECT * FROM users WHERE LOWER(email) = ?', ['admin@vantso.org.tr']);
+      } else if (emailClean === 'b.deniz@vantso.org.tr') {
+        await queryRun(
+          'INSERT INTO users (id, name, department, role, email, phone, status, type, tcNo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          ["U005", "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "b.deniz@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"]
+        );
+        user = await queryGet('SELECT * FROM users WHERE LOWER(email) = ?', ['b.deniz@vantso.org.tr']);
+      }
+    }
+
     if (!user) {
       return res.status(401).json({ error: 'Giriş yetkisi bulunmayan e-posta adresi!' });
     }
