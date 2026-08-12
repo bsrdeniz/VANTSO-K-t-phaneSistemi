@@ -1,6 +1,6 @@
 // C:\Users\BÜŞRA DENİZ\Desktop\VANTSO-KütüphaneSistemi\src\components\UserManagement.jsx
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, User, Mail, Phone, Fingerprint } from 'lucide-react';
+import { Plus, Edit2, Trash2, User, Mail, Phone, Fingerprint, AlertTriangle } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function UserManagement() {
@@ -8,6 +8,7 @@ export default function UserManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [activeUser, setActiveUser] = useState(null);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
   
   const [formData, setFormData] = useState({
     id: '',
@@ -63,14 +64,14 @@ export default function UserManagement() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (confirm('Bu üyeyi sistemden silmek istediğinize emin misiniz?')) {
-      try {
-        await api.deleteUser(id, activeUser?.id);
-        loadUsers();
-      } catch (error) {
-        alert(error.message);
-      }
+  const executeDelete = async () => {
+    if (!deleteTargetId) return;
+    try {
+      await api.deleteUser(deleteTargetId, activeUser?.id);
+      setDeleteTargetId(null);
+      loadUsers();
+    } catch (error) {
+      alert(error.message);
     }
   };
 
@@ -171,7 +172,7 @@ export default function UserManagement() {
                         <Edit2 size={12} /> Düzenle
                       </button>
                       <button 
-                        onClick={() => handleDelete(user.id)}
+                        onClick={() => setDeleteTargetId(user.id)}
                         className="btn btn-danger btn-sm"
                         title="Üye Sil"
                       >
@@ -273,6 +274,52 @@ export default function UserManagement() {
                 <button type="submit" className="btn btn-primary ml-2">{editMode ? 'Güncelle' : 'Kaydet'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirmation Modal */}
+      {deleteTargetId && (
+        <div className="modal-overlay">
+          <div className="modal-content text-center" style={{ maxWidth: '400px', padding: '30px' }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '48px',
+              height: '48px',
+              backgroundColor: '#fef2f2',
+              color: '#dc2626',
+              borderRadius: '50%',
+              marginBottom: '16px'
+            }}>
+              <AlertTriangle size={24} />
+            </div>
+            
+            <h3 style={{ color: 'var(--primary-color)', fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>
+              Üye Kaydı Silme Onayı
+            </h3>
+            
+            <p style={{ color: '#64748b', fontSize: '14px', lineHeight: '1.5', marginBottom: '24px' }}>
+              Bu üye kaydı sistemden kalıcı olarak silinecektir. Bu işlemi onaylıyor musunuz?
+            </p>
+            
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+              <button 
+                className="btn btn-outline" 
+                onClick={() => setDeleteTargetId(null)}
+                style={{ flex: 1, padding: '10px' }}
+              >
+                İptal
+              </button>
+              <button 
+                className="btn btn-danger" 
+                onClick={executeDelete}
+                style={{ flex: 1, padding: '10px' }}
+              >
+                Evet, Sil
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,11 +1,12 @@
 // C:\Users\BÜŞRA DENİZ\Desktop\VANTSO-KütüphaneSistemi\src\components\HistoryLogs.jsx
 import React, { useState, useEffect } from 'react';
-import { History, Search, Filter, Trash2 } from 'lucide-react';
+import { History, Search, Trash2, AlertTriangle } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function HistoryLogs() {
   const [logs, setLogs] = useState([]);
   const [users, setUsers] = useState([]);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
   
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,14 +44,14 @@ export default function HistoryLogs() {
     return user ? `${user.name} (${user.role})` : userId;
   };
 
-  const handleDeleteLog = async (id) => {
-    if (confirm('Bu hareket kaydını sistemden silmek istediğinize emin misiniz?')) {
-      try {
-        await api.deleteLog(id);
-        loadLogs();
-      } catch (error) {
-        alert('Hata: ' + error.message);
-      }
+  const executeDeleteLog = async () => {
+    if (!deleteTargetId) return;
+    try {
+      await api.deleteLog(deleteTargetId);
+      setDeleteTargetId(null);
+      loadLogs();
+    } catch (error) {
+      alert('Hata: ' + error.message);
     }
   };
 
@@ -129,7 +130,7 @@ export default function HistoryLogs() {
                     <td className="text-muted">{log.details}</td>
                     <td className="text-center">
                       <button 
-                        onClick={() => handleDeleteLog(log.id)}
+                        onClick={() => setDeleteTargetId(log.id)}
                         className="btn btn-danger btn-sm"
                         title="Hareketi Sil"
                         style={{ padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
@@ -144,6 +145,52 @@ export default function HistoryLogs() {
           </table>
         </div>
       </div>
+
+      {/* Custom Confirmation Modal */}
+      {deleteTargetId && (
+        <div className="modal-overlay">
+          <div className="modal-content text-center" style={{ maxWidth: '400px', padding: '30px' }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '48px',
+              height: '48px',
+              backgroundColor: '#fef2f2',
+              color: '#dc2626',
+              borderRadius: '50%',
+              marginBottom: '16px'
+            }}>
+              <AlertTriangle size={24} />
+            </div>
+            
+            <h3 style={{ color: 'var(--primary-color)', fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>
+              İşlem Kaydı Silme Onayı
+            </h3>
+            
+            <p style={{ color: '#64748b', fontSize: '14px', lineHeight: '1.5', marginBottom: '24px' }}>
+              Bu hareket kaydı kalıcı olarak silinecektir. Bu işlemi onaylıyor musunuz?
+            </p>
+            
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+              <button 
+                className="btn btn-outline" 
+                onClick={() => setDeleteTargetId(null)}
+                style={{ flex: 1, padding: '10px' }}
+              >
+                İptal
+              </button>
+              <button 
+                className="btn btn-danger" 
+                onClick={executeDeleteLog}
+                style={{ flex: 1, padding: '10px' }}
+              >
+                Evet, Sil
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

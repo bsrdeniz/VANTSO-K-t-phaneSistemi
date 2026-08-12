@@ -1,6 +1,6 @@
 // C:\Users\BÜŞRA DENİZ\Desktop\VANTSO-KütüphaneSistemi\src\components\BookManagement.jsx
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Tag, MapPin, Eye, BookOpen, Layers } from 'lucide-react';
+import { Plus, Edit2, Trash2, Tag, MapPin, Eye, BookOpen, Layers, AlertTriangle } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function BookManagement() {
@@ -8,6 +8,7 @@ export default function BookManagement() {
   const [locations, setLocations] = useState({ buildings: [], floors: [], cabinets: [], shelves: [] });
   const [settings, setSettings] = useState({});
   const [activeUser, setActiveUser] = useState(null);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
   
   // Modal & Form states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -111,14 +112,14 @@ export default function BookManagement() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (confirm('Bu kitabı envanterden silmek istediğinize emin misiniz?')) {
-      try {
-        await api.deleteBook(id, activeUser?.id);
-        loadData();
-      } catch (error) {
-        alert(error.message);
-      }
+  const executeDelete = async () => {
+    if (!deleteTargetId) return;
+    try {
+      await api.deleteBook(deleteTargetId, activeUser?.id);
+      setDeleteTargetId(null);
+      loadData();
+    } catch (error) {
+      alert(error.message);
     }
   };
 
@@ -255,7 +256,7 @@ export default function BookManagement() {
                           <Edit2 size={12} /> Düzenle
                         </button>
                         <button 
-                          onClick={() => handleDelete(book.id)} 
+                          onClick={() => setDeleteTargetId(book.id)} 
                           className="btn btn-danger btn-sm"
                           title="Sistemden Kaldır"
                         >
@@ -545,6 +546,52 @@ export default function BookManagement() {
                 <button type="submit" className="btn btn-primary ml-2">{editMode ? 'Güncelle' : 'Kaydet'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirmation Modal */}
+      {deleteTargetId && (
+        <div className="modal-overlay">
+          <div className="modal-content text-center" style={{ maxWidth: '400px', padding: '30px' }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '48px',
+              height: '48px',
+              backgroundColor: '#fef2f2',
+              color: '#dc2626',
+              borderRadius: '50%',
+              marginBottom: '16px'
+            }}>
+              <AlertTriangle size={24} />
+            </div>
+            
+            <h3 style={{ color: 'var(--primary-color)', fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>
+              Kitap Kaydı Silme Onayı
+            </h3>
+            
+            <p style={{ color: '#64748b', fontSize: '14px', lineHeight: '1.5', marginBottom: '24px' }}>
+              Bu kitap kaydı envanterden kalıcı olarak silinecektir. Bu işlemi onaylıyor musunuz?
+            </p>
+            
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+              <button 
+                className="btn btn-outline" 
+                onClick={() => setDeleteTargetId(null)}
+                style={{ flex: 1, padding: '10px' }}
+              >
+                İptal
+              </button>
+              <button 
+                className="btn btn-danger" 
+                onClick={executeDelete}
+                style={{ flex: 1, padding: '10px' }}
+              >
+                Evet, Sil
+              </button>
+            </div>
           </div>
         </div>
       )}
