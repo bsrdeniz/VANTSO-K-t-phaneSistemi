@@ -499,18 +499,39 @@ app.post('/api/login', async (req, res) => {
     // Güvenlik ve Sıfırlama Koruması: Eğer yönetici e-postaları veritabanında yoksa anında oluştur
     if (!user) {
       const emailClean = email.trim().toLowerCase();
-      if (emailClean === 'admin@vantso.org.tr') {
-        await queryRun(
-          'INSERT INTO users (id, name, department, role, email, phone, status, type, tcNo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          ["U001", "VAN TSO", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"]
-        );
-        user = await queryGet('SELECT * FROM users WHERE LOWER(email) = ?', ['admin@vantso.org.tr']);
-      } else if (emailClean === 'b.deniz@vantso.org.tr') {
-        await queryRun(
-          'INSERT INTO users (id, name, department, role, email, phone, status, type, tcNo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          ["U005", "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "b.deniz@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"]
-        );
-        user = await queryGet('SELECT * FROM users WHERE LOWER(email) = ?', ['b.deniz@vantso.org.tr']);
+      if (emailClean === 'admin@vantso.org.tr' || emailClean === 'b.deniz@vantso.org.tr') {
+        // ID çakışması önleme
+        let targetId = emailClean === 'admin@vantso.org.tr' ? 'U001' : 'U005';
+        const idCheck = await queryGet('SELECT * FROM users WHERE id = ?', [targetId]);
+        if (idCheck) {
+          // Find next available user ID
+          const countRow = await queryGet('SELECT count(*) as count FROM users');
+          let index = countRow.count + 1;
+          let check = true;
+          while (check) {
+            const nextId = 'U' + String(index).padStart(3, '0');
+            const exist = await queryGet('SELECT * FROM users WHERE id = ?', [nextId]);
+            if (!exist) {
+              targetId = nextId;
+              check = false;
+            }
+            index++;
+          }
+        }
+
+        if (emailClean === 'admin@vantso.org.tr') {
+          await queryRun(
+            'INSERT INTO users (id, name, department, role, email, phone, status, type, tcNo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [targetId, "VAN TSO", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"]
+          );
+          user = await queryGet('SELECT * FROM users WHERE LOWER(email) = ?', ['admin@vantso.org.tr']);
+        } else {
+          await queryRun(
+            'INSERT INTO users (id, name, department, role, email, phone, status, type, tcNo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [targetId, "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "b.deniz@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"]
+          );
+          user = await queryGet('SELECT * FROM users WHERE LOWER(email) = ?', ['b.deniz@vantso.org.tr']);
+        }
       }
     }
 

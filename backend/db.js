@@ -309,26 +309,42 @@ export const initDb = async () => {
       console.log('Veritabanında kayıtlı veriler mevcut, yükleme atlandı.');
     }
 
+    // Helper to get unique user ID to prevent constraint collisions
+    const getNextUserId = async () => {
+      const countRow = await queryGet('SELECT count(*) as count FROM users');
+      let index = countRow.count + 1;
+      while (true) {
+        const checkId = 'U' + String(index).padStart(3, '0');
+        const exists = await queryGet('SELECT * FROM users WHERE id = ?', [checkId]);
+        if (!exists) return checkId;
+        index++;
+      }
+    };
+
     // Her durumda admin@vantso.org.tr kullanıcısının veritabanında doğru ve güncel olduğundan emin ol
-    const adminCheck1 = await queryGet('SELECT * FROM users WHERE email = ?', ['admin@vantso.org.tr']);
+    const adminCheck1 = await queryGet('SELECT * FROM users WHERE LOWER(email) = ?', ['admin@vantso.org.tr']);
     if (!adminCheck1) {
+      const u001Check = await queryGet('SELECT * FROM users WHERE id = "U001"');
+      const targetId = u001Check ? await getNextUserId() : "U001";
       await queryRun(
         'INSERT INTO users (id, name, department, role, email, phone, status, type, tcNo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        ["U001", "VAN TSO", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"]
+        [targetId, "VAN TSO", "Bilgi İşlem ve Ar-Ge", "Yönetici", "admin@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"]
       );
     } else {
-      await queryRun('UPDATE users SET name = "VAN TSO", role = "Yönetici", status = "Aktif" WHERE email = "admin@vantso.org.tr"');
+      await queryRun('UPDATE users SET name = "VAN TSO", role = "Yönetici", status = "Aktif" WHERE LOWER(email) = ?', ['admin@vantso.org.tr']);
     }
 
     // Her durumda b.deniz@vantso.org.tr kullanıcısının veritabanında doğru ve güncel olduğundan emin ol
-    const adminCheck2 = await queryGet('SELECT * FROM users WHERE email = ?', ['b.deniz@vantso.org.tr']);
+    const adminCheck2 = await queryGet('SELECT * FROM users WHERE LOWER(email) = ?', ['b.deniz@vantso.org.tr']);
     if (!adminCheck2) {
+      const u005Check = await queryGet('SELECT * FROM users WHERE id = "U005"');
+      const targetId = u005Check ? await getNextUserId() : "U005";
       await queryRun(
         'INSERT INTO users (id, name, department, role, email, phone, status, type, tcNo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        ["U005", "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "b.deniz@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"]
+        [targetId, "Büşra Deniz", "Bilgi İşlem ve Ar-Ge", "Yönetici", "b.deniz@vantso.org.tr", "0555 123 45 67", "Aktif", "Personel", "11111111111"]
       );
     } else {
-      await queryRun('UPDATE users SET role = "Yönetici", status = "Aktif" WHERE email = "b.deniz@vantso.org.tr"');
+      await queryRun('UPDATE users SET role = "Yönetici", status = "Aktif" WHERE LOWER(email) = ?', ['b.deniz@vantso.org.tr']);
     }
 
     // Her durumda varsayılan admin şifresi ayar kaydının olduğundan emin ol
