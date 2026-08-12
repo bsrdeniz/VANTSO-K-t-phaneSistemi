@@ -7,6 +7,7 @@ export default function HistoryLogs() {
   const [logs, setLogs] = useState([]);
   const [users, setUsers] = useState([]);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [isClearAllModalOpen, setIsClearAllModalOpen] = useState(false);
   
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -55,6 +56,16 @@ export default function HistoryLogs() {
     }
   };
 
+  const handleClearAllLogs = async () => {
+    try {
+      await api.clearLogs();
+      setIsClearAllModalOpen(false);
+      loadLogs();
+    } catch (error) {
+      alert('Hata: ' + error.message);
+    }
+  };
+
   return (
     <div className="history-logs-view">
       {/* Filters Bar */}
@@ -88,6 +99,17 @@ export default function HistoryLogs() {
             </select>
           </div>
         </div>
+      </div>
+
+      {/* Action Bar */}
+      <div className="view-actions-bar mb-3" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-10px' }}>
+        <button 
+          className="btn btn-danger btn-sm" 
+          onClick={() => setIsClearAllModalOpen(true)}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontWeight: '500' }}
+        >
+          <Trash2 size={14} /> Tüm Geçmişi Temizle
+        </button>
       </div>
 
       {/* Logs Table */}
@@ -186,6 +208,52 @@ export default function HistoryLogs() {
                 style={{ flex: 1, padding: '10px' }}
               >
                 Evet, Sil
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Clear All Confirmation Modal */}
+      {isClearAllModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content text-center" style={{ maxWidth: '400px', padding: '30px' }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '48px',
+              height: '48px',
+              backgroundColor: '#fef2f2',
+              color: '#dc2626',
+              borderRadius: '50%',
+              marginBottom: '16px'
+            }}>
+              <AlertTriangle size={24} />
+            </div>
+            
+            <h3 style={{ color: 'var(--primary-color)', fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>
+              Tüm Geçmişi Temizleme Onayı
+            </h3>
+            
+            <p style={{ color: '#64748b', fontSize: '14px', lineHeight: '1.5', marginBottom: '24px' }}>
+              Tüm sistem hareket geçmişi kalıcı olarak silinecektir. Bu işlemi onaylıyor musunuz?
+            </p>
+            
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+              <button 
+                className="btn btn-outline" 
+                onClick={() => setIsClearAllModalOpen(false)}
+                style={{ flex: 1, padding: '10px' }}
+              >
+                İptal
+              </button>
+              <button 
+                className="btn btn-danger" 
+                onClick={handleClearAllLogs}
+                style={{ flex: 1, padding: '10px' }}
+              >
+                Evet, Tümünü Sil
               </button>
             </div>
           </div>

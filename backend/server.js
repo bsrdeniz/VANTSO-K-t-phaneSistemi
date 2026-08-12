@@ -351,6 +351,16 @@ app.delete('/api/logs/:id', async (req, res) => {
   }
 });
 
+// Clear all system logs
+app.delete('/api/logs', async (req, res) => {
+  try {
+    await queryRun('DELETE FROM system_logs');
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Force change password (directly, without old password verification)
 app.post('/api/settings/force-change-password', async (req, res) => {
   try {
