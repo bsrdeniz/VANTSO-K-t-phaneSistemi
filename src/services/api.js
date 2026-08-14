@@ -5,9 +5,13 @@ const API_BASE = window.location.port && window.location.port !== '5001'
   : '/api';
 
 const fetchJson = async (url, options = {}) => {
+  const token = sessionStorage.getItem('vantso_session_token');
+  const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
+
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders,
       ...options.headers
     },
     ...options
@@ -104,11 +108,18 @@ export const api = {
   },
   logout: () => {
     sessionStorage.removeItem('vantso_session_user');
+    sessionStorage.removeItem('vantso_session_token');
   },
-  login: (email, password) => fetchJson(`${API_BASE}/login`, {
-    method: 'POST',
-    body: JSON.stringify({ email, password })
-  }),
+  login: async (email, password) => {
+    const res = await fetchJson(`${API_BASE}/login`, {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+    if (res.token) {
+      sessionStorage.setItem('vantso_session_token', res.token);
+    }
+    return res.user;
+  },
 
   // Calculate notifications locally on the frontend (keeps the UI fast)
   getNotifications: (records, books, users, warningDays = 3) => {

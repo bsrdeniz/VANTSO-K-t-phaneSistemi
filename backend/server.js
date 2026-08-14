@@ -3,11 +3,13 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 import { 
   initDb, 
   queryAll, 
   queryRun, 
-  queryGet 
+  queryGet,
+  hashPassword
 } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -18,6 +20,70 @@ const PORT = process.env.PORT || 5001;
 
 app.use(cors());
 app.use(express.json());
+
+// Token Authentication Configuration (Zero-dependency cryptographic tokens)
+const TOKEN_SECRET = process.env.TOKEN_SECRET || crypto.randomBytes(32).toString('hex');
+
+const generateToken = (user) => {
+  const payload = JSON.stringify({
+    id: user.id,
+    role: user.role,
+    email: user.email,
+    exp: Date.now() + 24 * 60 * 60 * 1000 // 24 Hours
+  });
+  const signature = crypto.createHmac('sha256', TOKEN_SECRET).update(payload).digest('hex');
+  return Buffer.from(payload).toString('base64') + '.' + signature;
+};
+
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Lütfen giriş yapın (Yetkisiz erişim).' });
+  }
+
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 2) {
+      return res.status(401).json({ error: 'Geçersiz oturum anahtarı.' });
+    }
+
+    const [payloadB64, signature] = parts;
+    const payloadStr = Buffer.from(payloadB64, 'base64').toString('utf8');
+    
+    // Verify cryptographic signature
+    const expectedSignature = crypto.createHmac('sha256', TOKEN_SECRET).update(payloadStr).digest('hex');
+    if (signature !== expectedSignature) {
+      return res.status(401).json({ error: 'Oturum doğrulaması başarısız.' });
+    }
+
+    const payload = JSON.parse(payloadStr);
+    // Check if session has expired
+    if (payload.exp < Date.now()) {
+      return res.status(401).json({ error: 'Oturum süresi doldu. Lütfen tekrar giriş yapın.' });
+    }
+
+    req.user = payload;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Oturum doğrulanırken hata oluştu.' });
+  }
+};
+
+// Login Rate Limiting (Brute-Force Protection)
+const loginAttempts = {};
+
+const loginRateLimiter = (req, res, next) => {
+  const ip = req.ip;
+  const now = Date.now();
+
+  if (loginAttempts[ip] && loginAttempts[ip].blockUntil > now) {
+    const remainingTime = Math.ceil((loginAttempts[ip].blockUntil - now) / 60000);
+    return res.status(429).json({ error: `Çok fazla hatalı deneme! Lütfen ${remainingTime} dakika sonra tekrar deneyin.` });
+  }
+  next();
+};
 
 // Disable caching for all API routes to prevent stale data on page refresh (F5)
 app.use('/api', (req, res, next) => {
@@ -78,7 +144,7 @@ const formatBook = (b) => ({
 // ==========================================
 
 // Get all books
-app.get('/api/books', async (req, res) => {
+app.get('/api/books', authenticateToken, async (req, res) => {
   try {
     const rows = await queryAll('SELECT * FROM books');
     const formatted = rows.map(formatBook);
@@ -89,13 +155,13 @@ app.get('/api/books', async (req, res) => {
 });
 
 // Add a book
-app.post('/api/books', async (req, res) => {
+app.post('/api/books', authenticateToken, async (req, res) => {
   try {
     const { 
       name, barcode, isbn, fixtureNo, author, publisher, publishYear, 
       edition, pageCount, language, keywords, summary, 
       coverImage, totalCopies, status, location, userId
-    } = req.targetBook = req.body;
+    } = req.body;
 
     const countRow = await queryGet('SELECT count(*) as count FROM books');
     const bookId = 'B' + String(countRow.count + 1).padStart(3, '0');
@@ -122,7 +188,7 @@ app.post('/api/books', async (req, res) => {
 });
 
 // Update a book
-app.put('/api/books/:id', async (req, res) => {
+app.put('/api/books/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { 
@@ -159,7 +225,7 @@ app.put('/api/books/:id', async (req, res) => {
 });
 
 // Delete a book
-app.delete('/api/books/:id', async (req, res) => {
+app.delete('/api/books/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { userId } = req.query; // pass userId in query params for logging
@@ -182,7 +248,7 @@ app.delete('/api/books/:id', async (req, res) => {
 // ==========================================
 
 // Get all users
-app.get('/api/users', async (req, res) => {
+app.get('/api/users', authenticateToken, async (req, res) => {
   try {
     const rows = await queryAll('SELECT * FROM users');
     res.json(rows);
@@ -192,7 +258,7 @@ app.get('/api/users', async (req, res) => {
 });
 
 // Add a user
-app.post('/api/users', async (req, res) => {
+app.post('/api/users', authenticateToken, async (req, res) => {
   try {
     const { name, department, role, email, phone, status, type, tcNo, actorId } = req.body;
     const countRow = await queryGet('SELECT count(*) as count FROM users');
@@ -211,7 +277,7 @@ app.post('/api/users', async (req, res) => {
 });
 
 // Update a user
-app.put('/api/users/:id', async (req, res) => {
+app.put('/api/users/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, department, role, email, phone, status, type, tcNo, actorId } = req.body;
@@ -233,7 +299,7 @@ app.put('/api/users/:id', async (req, res) => {
 });
 
 // Delete a user
-app.delete('/api/users/:id', async (req, res) => {
+app.delete('/api/users/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { actorId } = req.query;
@@ -256,7 +322,7 @@ app.delete('/api/users/:id', async (req, res) => {
 // ==========================================
 
 // Get all lend records
-app.get('/api/lend', async (req, res) => {
+app.get('/api/lend', authenticateToken, async (req, res) => {
   try {
     const rows = await queryAll('SELECT * FROM lend_records');
     res.json(rows);
@@ -266,7 +332,7 @@ app.get('/api/lend', async (req, res) => {
 });
 
 // Lend a book
-app.post('/api/lend', async (req, res) => {
+app.post('/api/lend', authenticateToken, async (req, res) => {
   try {
     const { bookId, userId, dueDate, actorId } = req.body;
 
@@ -302,7 +368,7 @@ app.post('/api/lend', async (req, res) => {
 });
 
 // Return a book
-app.post('/api/return', async (req, res) => {
+app.post('/api/return', authenticateToken, async (req, res) => {
   try {
     const { recordId, returnStatus, actorId } = req.body; // returnStatus = Rafta, Hasarlı, Kayıp
 
@@ -340,7 +406,7 @@ app.post('/api/return', async (req, res) => {
 // SYSTEM LOGS API
 // ==========================================
 
-app.get('/api/logs', async (req, res) => {
+app.get('/api/logs', authenticateToken, async (req, res) => {
   try {
     const rows = await queryAll('SELECT * FROM system_logs ORDER BY timestamp DESC LIMIT 100');
     res.json(rows);
@@ -350,7 +416,7 @@ app.get('/api/logs', async (req, res) => {
 });
 
 // Delete a specific system log
-app.delete('/api/logs/:id', async (req, res) => {
+app.delete('/api/logs/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     await queryRun('DELETE FROM system_logs WHERE id = ?', [id]);
@@ -361,7 +427,7 @@ app.delete('/api/logs/:id', async (req, res) => {
 });
 
 // Clear all system logs
-app.delete('/api/logs', async (req, res) => {
+app.delete('/api/logs', authenticateToken, async (req, res) => {
   try {
     await queryRun('DELETE FROM system_logs');
     res.json({ success: true });
@@ -371,10 +437,11 @@ app.delete('/api/logs', async (req, res) => {
 });
 
 // Force change password (directly, without old password verification)
-app.post('/api/settings/force-change-password', async (req, res) => {
+app.post('/api/settings/force-change-password', authenticateToken, async (req, res) => {
   try {
     const { newPassword, actorId } = req.body;
-    await queryRun('UPDATE settings SET value = ? WHERE key = "admin_password"', [newPassword]);
+    const hashedNew = hashPassword(newPassword);
+    await queryRun('UPDATE settings SET value = ? WHERE key = "admin_password"', [hashedNew]);
     await addLog(actorId, 'Şifre Güncelleme', 'Yönetici giriş şifresi doğrudan güncellendi.');
     res.json({ success: true });
   } catch (error) {
@@ -390,7 +457,8 @@ app.post('/api/settings/reset-password', async (req, res) => {
     if (emailClean !== 'admin@vantso.org.tr' && emailClean !== 'b.deniz@vantso.org.tr') {
       return res.status(400).json({ error: 'Geçersiz e-posta adresi.' });
     }
-    await queryRun('UPDATE settings SET value = "vantso123" WHERE key = "admin_password"');
+    const hashedDefault = hashPassword('vantso123');
+    await queryRun('UPDATE settings SET value = ? WHERE key = "admin_password"', [hashedDefault]);
     await addLog('Sistem', 'Şifre Sıfırlama', 'Yönetici şifresi varsayılan şifreye ("vantso123") sıfırlandı.');
     res.json({ success: true, message: 'Şifreniz başarıyla varsayılan şifre ("vantso123") olarak güncellenmiştir!' });
   } catch (error) {
@@ -403,7 +471,7 @@ app.post('/api/settings/reset-password', async (req, res) => {
 // ==========================================
 
 // Get all settings, categories and locations as a single object
-app.get('/api/settings', async (req, res) => {
+app.get('/api/settings', authenticateToken, async (req, res) => {
   try {
     const settingsRows = await queryAll('SELECT * FROM settings');
     const categoriesRows = await queryAll('SELECT * FROM categories');
@@ -430,7 +498,7 @@ app.get('/api/settings', async (req, res) => {
 });
 
 // Save core settings parameters
-app.post('/api/settings', async (req, res) => {
+app.post('/api/settings', authenticateToken, async (req, res) => {
   try {
     const { barcodePrefix, lendingLimitDays, warningBeforeDays, actorId } = req.body;
 
@@ -452,7 +520,7 @@ app.post('/api/settings', async (req, res) => {
 });
 
 // Add category
-app.post('/api/settings/categories', async (req, res) => {
+app.post('/api/settings/categories', authenticateToken, async (req, res) => {
   try {
     const { name, actorId } = req.body;
     await queryRun('INSERT INTO categories (name) VALUES (?)', [name]);
@@ -464,7 +532,7 @@ app.post('/api/settings/categories', async (req, res) => {
 });
 
 // Delete category
-app.delete('/api/settings/categories/:name', async (req, res) => {
+app.delete('/api/settings/categories/:name', authenticateToken, async (req, res) => {
   try {
     const { name } = req.params;
     const { actorId } = req.query;
@@ -477,7 +545,7 @@ app.delete('/api/settings/categories/:name', async (req, res) => {
 });
 
 // Add location value
-app.post('/api/settings/locations', async (req, res) => {
+app.post('/api/settings/locations', authenticateToken, async (req, res) => {
   try {
     const { type, value, actorId } = req.body; // type = buildings, floors, cabinets, shelves
     await queryRun('INSERT INTO locations (type, value) VALUES (?, ?)', [type, value]);
@@ -489,7 +557,7 @@ app.post('/api/settings/locations', async (req, res) => {
 });
 
 // Delete location value
-app.delete('/api/settings/locations', async (req, res) => {
+app.delete('/api/settings/locations', authenticateToken, async (req, res) => {
   try {
     const { type, value, actorId } = req.query;
     await queryRun('DELETE FROM locations WHERE type = ? AND value = ?', [type, value]);
@@ -501,17 +569,28 @@ app.delete('/api/settings/locations', async (req, res) => {
 });
 
 // Authentication endpoint (verifies admin login against SQLite/PostgreSQL)
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', loginRateLimiter, async (req, res) => {
+  const ip = req.ip;
   try {
     const { email, password } = req.body;
 
     const passRow = await queryGet('SELECT value FROM settings WHERE key = "admin_password"');
-    const adminPassword = passRow ? passRow.value : 'vantso123';
+    const adminPassword = passRow ? passRow.value : hashPassword('vantso123');
 
-    if (password !== adminPassword) {
-      return res.status(401).json({ error: 'Hatalı şifre!' });
+    // Hash the input password to check against database
+    const hashedInput = hashPassword(password);
+    if (hashedInput !== adminPassword) {
+      if (!loginAttempts[ip]) {
+        loginAttempts[ip] = { count: 0, blockUntil: 0 };
+      }
+      loginAttempts[ip].count += 1;
+      if (loginAttempts[ip].count >= 5) {
+        loginAttempts[ip].blockUntil = Date.now() + 15 * 60 * 1000;
+        return res.status(429).json({ error: 'Çok fazla hatalı deneme! Hesabınız güvenlik nedeniyle 15 dakika boyunca kilitlenmiştir.' });
+      }
+      return res.status(401).json({ error: `Hatalı şifre! Kalan deneme hakkınız: ${5 - loginAttempts[ip].count}` });
     }
-    
+
     // Query db for the user with the given email (case-insensitive)
     let user = await queryGet('SELECT * FROM users WHERE LOWER(email) = LOWER(?) AND status = "Aktif"', [email.trim()]);
     
@@ -557,15 +636,25 @@ app.post('/api/login', async (req, res) => {
     if (!user) {
       return res.status(401).json({ error: 'Giriş yetkisi bulunmayan e-posta adresi!' });
     }
+
+    // Success: Clear login attempts history for this IP
+    if (loginAttempts[ip]) {
+      delete loginAttempts[ip];
+    }
+
+    const token = generateToken(user);
     
     res.json({
-      id: user.id,
-      name: user.name,
-      department: user.department,
-      role: user.role,
-      email: user.email,
-      phone: user.phone,
-      status: user.status
+      user: {
+        id: user.id,
+        name: user.name,
+        department: user.department,
+        role: user.role,
+        email: user.email,
+        phone: user.phone,
+        status: user.status
+      },
+      token
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -573,18 +662,20 @@ app.post('/api/login', async (req, res) => {
 });
 
 // Change admin login password in settings
-app.post('/api/settings/change-password', async (req, res) => {
+app.post('/api/settings/change-password', authenticateToken, async (req, res) => {
   try {
     const { currentPassword, newPassword, actorId } = req.body;
     
     const passRow = await queryGet('SELECT value FROM settings WHERE key = "admin_password"');
-    const adminPassword = passRow ? passRow.value : 'vantso123';
+    const adminPassword = passRow ? passRow.value : hashPassword('vantso123');
     
-    if (currentPassword !== adminPassword) {
+    const hashedCurrent = hashPassword(currentPassword);
+    if (hashedCurrent !== adminPassword) {
       return res.status(400).json({ error: 'Mevcut şifre hatalı!' });
     }
     
-    await queryRun('UPDATE settings SET value = ? WHERE key = "admin_password"', [newPassword]);
+    const hashedNew = hashPassword(newPassword);
+    await queryRun('UPDATE settings SET value = ? WHERE key = "admin_password"', [hashedNew]);
     await addLog(actorId, 'Şifre Değiştirme', 'Yönetici giriş şifresi başarıyla güncellendi.');
     
     res.json({ success: true });

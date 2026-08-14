@@ -2,6 +2,12 @@ import sqlite3 from 'sqlite3';
 import pg from 'pg';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
+
+export const hashPassword = (password) => {
+  if (!password) return '';
+  return crypto.createHash('sha256').update(password).digest('hex');
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -347,10 +353,19 @@ export const initDb = async () => {
       await queryRun('UPDATE users SET role = "Yönetici", status = "Aktif" WHERE LOWER(email) = ?', ['b.deniz@vantso.org.tr']);
     }
 
-    // Her durumda varsayılan admin şifresi ayar kaydının olduğundan emin ol
+    // Her durumda varsayılan admin şifresi ayar kaydının olduğundan emin ol ve düz metinleri otomatik hash'le
     const passwordCheck = await queryGet('SELECT * FROM settings WHERE key = "admin_password"');
     if (!passwordCheck) {
-      await queryRun("INSERT INTO settings (key, value) VALUES ('admin_password', 'vantso123')");
+      const hashedDefault = hashPassword('vantso123');
+      await queryRun("INSERT INTO settings (key, value) VALUES ('admin_password', ?)", [hashedDefault]);
+    } else {
+      const currentVal = passwordCheck.value;
+      const isHash = /^[a-f0-9]{64}$/i.test(currentVal);
+      if (!isHash) {
+        const hashedVal = hashPassword(currentVal);
+        await queryRun("UPDATE settings SET value = ? WHERE key = 'admin_password'", [hashedVal]);
+        console.log('Mevcut düz metin yönetici şifresi veritabanı başlangıcında SHA-256 ile hash\'lendi.');
+      }
     }
   } catch (error) {
     console.error('Veritabanı başlatma hatası:', error);
