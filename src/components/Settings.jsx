@@ -11,9 +11,20 @@ export default function SettingsView() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [dbDriver, setDbDriver] = useState('');
 
   useEffect(() => {
     setActiveUser(api.getActiveUser());
+
+    const fetchDbStatus = async () => {
+      try {
+        const config = await api.getSettings();
+        setDbDriver(config.dbDriver || 'SQLite (Geçici)');
+      } catch (err) {
+        console.error('Veritabanı bilgisi alınamadı:', err);
+      }
+    };
+    fetchDbStatus();
   }, []);
 
   const handleChangePassword = async (e) => {
@@ -75,6 +86,42 @@ export default function SettingsView() {
             </span>
           </div>
         </div>
+
+        {/* Database Status Card */}
+        {dbDriver && (
+          <div style={{
+            backgroundColor: dbDriver.includes('PostgreSQL') ? '#f0fdf4' : '#fffbeb',
+            border: dbDriver.includes('PostgreSQL') ? '1px solid #bbf7d0' : '1px solid #fef3c7',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div>
+              <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Aktif Veritabanı Türü</div>
+              <div style={{ 
+                fontSize: '13px', 
+                fontWeight: '600', 
+                color: dbDriver.includes('PostgreSQL') ? '#166534' : '#92400e',
+                marginTop: '2px'
+              }}>
+                {dbDriver}
+              </div>
+            </div>
+            <span style={{
+              fontSize: '10px',
+              padding: '3px 8px',
+              borderRadius: '100px',
+              backgroundColor: dbDriver.includes('PostgreSQL') ? '#dcfce7' : '#fee2e2',
+              color: dbDriver.includes('PostgreSQL') ? '#15803d' : '#991b1b',
+              fontWeight: '600'
+            }}>
+              {dbDriver.includes('PostgreSQL') ? 'Kalıcı Bağlantı' : 'Geçici Depolama (Veriler Kaybolabilir)'}
+            </span>
+          </div>
+        )}
 
         {successMsg && (
           <div className="alert-success-banner mb-4" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', backgroundColor: '#ecfdf5', color: '#047857', borderRadius: '6px', fontSize: '14px' }}>

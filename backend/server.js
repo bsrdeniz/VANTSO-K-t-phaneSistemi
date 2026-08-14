@@ -491,6 +491,8 @@ app.get('/api/settings', authenticateToken, async (req, res) => {
       shelves: locationsRows.filter(l => l.type === 'shelves').map(l => l.value)
     };
 
+    config.dbDriver = isPg ? 'PostgreSQL (Kalıcı)' : 'SQLite (Geçici)';
+
     res.json(config);
   } catch (error) {
     res.status(500).json({ error: error.message });
